@@ -1,0 +1,311 @@
+╔══════════════════════════════════════════════════════════════════╗
+║         CRM FRONTEND ARCHITECTURE  —  React + Node + MongoDB     ║
+╚══════════════════════════════════════════════════════════════════╝
+
+  Two Roles:
+    ADMIN  → can do everything (view all leads, edit any lead, add
+             salesperson, see reports, dashboard)
+    SALES  → limited access (only their own leads/clients, add lead,
+             add client, their own dashboard)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. FOLDER STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  src/
+  │
+  ├── api/                  ← all API call functions live here
+  │   ├── axios.js          ← base axios setup (base URL, interceptors)
+  │   ├── auth.js           ← login, logout, refresh token
+  │   ├── leads.js          ← get, create, update leads
+  │   ├── clients.js        ← create, search clients
+  │   ├── users.js          ← add salesperson, list team (admin only)
+  │   └── reports.js        ← get report data (admin only)
+  │
+  ├── components/
+  │   ├── shared/           ← used by both admin and sales
+  │   │   ├── Navbar.jsx
+  │   │   ├── Sidebar.jsx
+  │   │   ├── LoadingSpinner.jsx
+  │   │   ├── ConfirmModal.jsx
+  │   │   ├── Toast.jsx
+  │   │   ├── EmptyState.jsx
+  │   │   └── ErrorBoundary.jsx
+  │   │
+  │   ├── admin/            ← only used in admin pages
+  │   │   ├── LeadTable.jsx
+  │   │   ├── LeadEditModal.jsx
+  │   │   ├── SalespersonTable.jsx
+  │   │   ├── AddSalespersonForm.jsx
+  │   │   ├── RevenueChart.jsx
+  │   │   ├── ConversionFunnel.jsx
+  │   │   └── SalesRepComparison.jsx
+  │   │
+  │   └── sales/            ← only used in sales pages
+  │       ├── MyLeadTable.jsx
+  │       ├── LeadForm.jsx
+  │       ├── ClientForm.jsx
+  │       └── MyLeadPipeline.jsx
+  │
+  ├── pages/
+  │   ├── auth/
+  │   │   └── Login.jsx
+  │   │
+  │   ├── admin/            ← admin sees these pages
+  │   │   ├── Dashboard.jsx
+  │   │   ├── AllLeads.jsx
+  │   │   ├── Team.jsx
+  │   │   └── Reports.jsx
+  │   │
+  │   └── sales/            ← sales sees these pages
+  │       ├── Dashboard.jsx
+  │       ├── MyLeads.jsx
+  │       ├── AddLead.jsx
+  │       └── AddClient.jsx
+  │
+  ├── context/
+  │   └── AuthContext.jsx   ← stores user info, role, token globally
+  │
+  ├── routes/
+  │   ├── AppRouter.jsx     ← main router, decides which routes exist
+  │   └── ProtectedRoute.jsx← blocks access if wrong role or not logged in
+  │
+  ├── store/
+  │   └── useUIStore.js     ← Zustand store for UI state (modals, filters)
+  │
+  ├── hooks/
+  │   ├── useAuth.js        ← easy access to AuthContext
+  │   ├── useLeads.js       ← React Query hook for leads data
+  │   └── useReports.js     ← React Query hook for report data
+  │
+  └── utils/
+      └── roleGuard.js      ← helper to check if user has permission
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  2. PAGES — What Each Role Sees
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │  ADMIN PAGES                                                │
+  ├──────────────────┬──────────────────────────────────────────┤
+  │  Page            │  What's on it                           │
+  ├──────────────────┼──────────────────────────────────────────┤
+  │  /admin/dashboard│  KPI cards, lead funnel chart,          │
+  │                  │  sales heatmap, recent activity feed     │
+  ├──────────────────┼──────────────────────────────────────────┤
+  │  /admin/leads    │  Table of ALL leads (every salesperson)  │
+  │                  │  Can edit any lead, filter, sort,        │
+  │                  │  bulk actions                            │
+  ├──────────────────┼──────────────────────────────────────────┤
+  │  /admin/team     │  List of salespersons                    │
+  │                  │  Add new salesperson form                │
+  │                  │  Performance tags per person             │
+  ├──────────────────┼──────────────────────────────────────────┤
+  │  /admin/reports  │  Date range picker                       │
+  │                  │  Revenue chart, conversion funnel        │
+  │                  │  Sales rep comparison, export button     │
+  └──────────────────┴──────────────────────────────────────────┘
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │  SALES PAGES                                                │
+  ├──────────────────┬──────────────────────────────────────────┤
+  │  Page            │  What's on it                           │
+  ├──────────────────┼──────────────────────────────────────────┤
+  │  /sales/dashboard│  Their own KPIs, their lead pipeline,   │
+  │                  │  today's tasks, quick add button         │
+  ├──────────────────┼──────────────────────────────────────────┤
+  │  /sales/leads    │  Table of ONLY their own leads          │
+  │                  │  Can edit only their leads               │
+  │                  │  Filter and status update                │
+  ├──────────────────┼──────────────────────────────────────────┤
+  │  /sales/leads/new│  Form to add a new lead                  │
+  │                  │  Client search, source, priority fields  │
+  ├──────────────────┼──────────────────────────────────────────┤
+  │  /sales/clients/ │  Form to add a new client               │
+  │  new             │  Company search, contact fields          │
+  └──────────────────┴──────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  3. HOW ROUTING & ROLE PROTECTION WORKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  AppRouter.jsx sets up routes like this:
+
+    /login                    → public (no login needed)
+
+    /admin/*                  → wrapped in <ProtectedRoute role="admin">
+      /admin/dashboard
+      /admin/leads
+      /admin/team
+      /admin/reports
+
+    /sales/*                  → wrapped in <ProtectedRoute role="sales">
+      /sales/dashboard
+      /sales/leads
+      /sales/leads/new
+      /sales/clients/new
+
+  ProtectedRoute.jsx checks:
+    Step 1 → Is the user logged in?
+              NO  → redirect to /login
+              YES → continue
+
+    Step 2 → Does the user have the right role?
+              NO  → redirect to /unauthorized
+              YES → render the page
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  4. AUTH FLOW  (step by step)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. User opens the app
+         ↓
+  2. AuthContext checks localStorage for a saved JWT token
+         ↓
+  3a. Token found → decode it → set user + role in context
+  3b. No token    → user is treated as logged out
+         ↓
+  4. User visits a protected route
+         ↓
+  5. ProtectedRoute checks role (see Section 3 above)
+         ↓
+  6. Page loads → React Query fetches data from API
+         ↓
+  7. axios.js attaches the JWT token to every request automatically
+         ↓
+  8. Backend (Node.js) checks the token AGAIN on its side
+     (frontend role checks are just for UX — backend is the real guard)
+         ↓
+  9. If token expires → backend returns 401
+         ↓
+  10. axios interceptor catches the 401
+      → clears the token from context and localStorage
+      → redirects user back to /login
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  5. STATE MANAGEMENT  (what handles what)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  AuthContext         → who is logged in, what role, the JWT token
+                        used everywhere via useAuth() hook
+
+  React Query         → all server data (leads, clients, reports)
+                        handles loading, caching, refetching automatically
+                        example: useLeads() hook calls GET /api/leads
+
+  Zustand (useUIStore)→ UI-only state that doesn't need the server
+                        examples: is modal open? what filters are active?
+                        which lead is selected?
+
+  Rule of thumb:
+    Data from the server   → React Query
+    Who the user is        → AuthContext
+    UI stuff (open/closed) → Zustand
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  6. API SETUP  (src/api/)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  axios.js  (the base setup, every other api file uses this)
+  ───────────────────────────────────────────────────────────
+    - Sets base URL (e.g. http://localhost:5000/api)
+    - Request interceptor: adds "Authorization: Bearer <token>"
+      to every outgoing request automatically
+    - Response interceptor: if response is 401, log the user out
+
+  leads.js
+  ───────────────────────────────────────────────────────────
+    getLeads(filters)       → GET  /api/leads
+                              Admin gets all, Sales gets only theirs
+                              (backend filters by assignedTo automatically)
+
+    createLead(data)        → POST /api/leads
+
+    updateLead(id, data)    → PATCH /api/leads/:id
+
+  clients.js
+  ───────────────────────────────────────────────────────────
+    createClient(data)      → POST /api/clients
+    searchClients(query)    → GET  /api/clients?search=query
+
+  users.js  (admin only)
+  ───────────────────────────────────────────────────────────
+    getSalespersons()       → GET  /api/users
+    addSalesperson(data)    → POST /api/users
+
+  reports.js  (admin only)
+  ───────────────────────────────────────────────────────────
+    getReports(dateRange)   → GET  /api/reports
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  7. PERMISSION TABLE  (who can do what)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Action                      ADMIN       SALES
+  ─────────────────────────── ─────────── ───────────────────
+  View ALL leads              YES         NO
+  View own leads only         YES         YES
+  Edit any lead               YES         NO
+  Edit own lead               YES         YES
+  Add a new lead              YES         YES
+  Add a new client            YES         YES
+  Add a salesperson           YES         NO
+  View reports                YES         NO
+  View dashboard              YES         YES (own data only)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  8. SHARED COMPONENTS  (both roles use these)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Navbar          → top bar, shows user name + logout button
+  Sidebar         → left nav menu, links change based on role
+  LoadingSpinner  → shown while API data is loading
+  Toast           → success/error messages that pop up briefly
+  ConfirmModal    → "Are you sure?" popup for delete/risky actions
+  EmptyState      → friendly message when there's no data to show
+  ErrorBoundary   → catches crashes and shows a fallback UI
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  9. TECH STACK SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  React 18          → UI framework
+  React Router v6   → page routing and navigation
+  React Query       → fetching and caching server data
+  Zustand           → simple UI state management
+  Axios             → HTTP requests to the backend
+  Recharts          → charts for dashboard and reports
+  Node.js + Express → backend API
+  MongoDB           → database
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  10. QUICK TIPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - Never trust role checks on the frontend alone.
+    The backend must ALWAYS validate the JWT token and role too.
+
+  - Sales reps should never receive other reps' data at all.
+    The API query for sales is always:  GET /api/leads?assignedTo=<userId>
+    so the backend only sends back their own leads.
+
+  - Keep admin/ and sales/ components separate.
+    Don't mix them — it keeps the code clean and easy to maintain.
+
+  - Use React Query for any data that comes from the server.
+    It handles loading states, errors, and re-fetching for free.
+
+  - Use Zustand only for UI state.
+    Things like: is the modal open? which tab is selected? filters.
+
+══════════════════════════════════════════════════════════════════

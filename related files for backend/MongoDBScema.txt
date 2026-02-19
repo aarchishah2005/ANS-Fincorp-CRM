@@ -1,0 +1,21 @@
+User Model
+{
+  name: String,
+  email: String,
+  password: String,
+  role: { type: String, enum: ["admin", "sales"], default: "sales" }
+}
+
+Lead Model
+{
+  firm_name: String,
+  person_name: String,
+  mobile: String,
+  district: String,
+  amount: Number,
+  project_status: String,
+  created_by: ObjectId (ref: User),
+  created_at: Date
+}
+
+

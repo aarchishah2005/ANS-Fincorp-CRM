@@ -1,0 +1,55 @@
+.my-lead-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.my-lead-table thead {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+}
+
+.my-lead-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.my-lead-table td {
+  padding: 16px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #4a5568;
+  vertical-align: middle;
+}
+
+.my-lead-table tr:last-child td {
+  border-bottom: none;
+}
+
+.my-lead-table tbody tr:hover td {
+  background: #f7fafc;
+}
+
+.my-lead-table__srno {
+  font-weight: 700;
+  color: #10b981 !important;
+}
+
+.my-lead-table__firm {
+  font-weight: 600;
+  color: #1a202c !important;
+}
+
+.my-lead-table__sanction {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.my-lead-table__amount {
+  font-weight: 600;
+  color: #10b981 !important;
+}

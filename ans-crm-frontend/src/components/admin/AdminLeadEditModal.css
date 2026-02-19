@@ -1,0 +1,86 @@
+.admin-edit-modal {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.admin-edit-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 32px 20px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.admin-edit-modal__header h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
+}
+
+.admin-edit-modal__close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #718096;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.admin-edit-modal__close:hover {
+  background: #f7fafc;
+  color: #1a202c;
+}
+
+.admin-edit-modal__body {
+  padding: 24px 32px 32px;
+}
+
+.admin-edit-modal__section {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 24px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.admin-edit-modal__section:first-of-type {
+  margin-top: 0;
+}
+
+.admin-edit-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.admin-edit-modal__grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.admin-edit-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid #e2e8f0;
+}
+
+@media (max-width: 768px) {
+  .admin-edit-modal__grid,
+  .admin-edit-modal__grid--3 {
+    grid-template-columns: 1fr;
+  }
+}
