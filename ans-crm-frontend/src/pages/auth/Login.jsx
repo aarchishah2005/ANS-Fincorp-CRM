@@ -20,6 +20,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Login triggered");
     setLoading(true);
     try {
       const data = await login(form.email, form.password);
