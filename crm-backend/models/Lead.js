@@ -138,6 +138,6 @@ const leadSchema = new mongoose.Schema(
 // Indexes for fast queries
 leadSchema.index({ assignedTo: 1 });
 leadSchema.index({ firmName: 1 });
-leadSchema.index({ srNo: 1 });
+// leadSchema.index({ srNo: 1 });
 
 module.exports = mongoose.model("Lead", leadSchema);
