@@ -5,7 +5,8 @@ import LoadingSpinner from "../../components/shared/LoadingSpinner";
 import { useLeads, useDeleteLead } from "../../hooks/useLeads";
 import useUIStore from "../../store/useUIStore";
 import AdminLeadEditModal from "../../components/admin/AdminLeadEditModal";
-import LeadDetailModal from "../../components/admin/LeadDetailModal";
+import LeadDetailModal from "../../components/shared/LeadDetailModal";
+import BankSelectorModal from "../../components/admin/BankSelectorModal";
 import "./AllLeads.css";
 
 const AllLeads = () => {
@@ -13,6 +14,7 @@ const AllLeads = () => {
   const { showConfirm, showToast, leadFilters, setLeadFilters, resetLeadFilters } = useUIStore();
   const [editingLead, setEditingLead] = useState(null);
   const [viewingLead, setViewingLead] = useState(null);
+  const [showBankSelector, setShowBankSelector] = useState(false);
   const { mutate: deleteLead } = useDeleteLead();
 
   const activeFilters = Object.fromEntries(
@@ -33,6 +35,11 @@ const AllLeads = () => {
     );
   };
 
+  const handleBankSelect = (bankName) => {
+    setLeadFilters({ bankName });
+    setShowBankSelector(false);
+  };
+
   return (
     <Layout>
       <div className="page-header">
@@ -45,7 +52,7 @@ const AllLeads = () => {
         </button>
       </div>
 
-      {/* FILTERS - Including Bank Name */}
+      {/* FILTERS - Including Bank Selector */}
       <div className="all-leads__filters card">
         <input
           className="form-input"
@@ -70,13 +77,14 @@ const AllLeads = () => {
           <option value="true">Sanctioned</option>
           <option value="false">Not Sanctioned</option>
         </select>
-        <input
-          className="form-input"
-          style={{ minWidth: "160px" }}
-          placeholder="Bank Name"
-          value={leadFilters.bankName || ""}
-          onChange={(e) => setLeadFilters({ bankName: e.target.value })}
-        />
+        
+        {/* BANK SELECTOR BUTTON */}
+        <button
+          className="btn btn--outline all-leads__bank-btn"
+          onClick={() => setShowBankSelector(true)}>
+          🏦 {leadFilters.bankName || "Select Bank"}
+        </button>
+        
         <button className="btn btn--ghost" onClick={resetLeadFilters}>
           Reset
         </button>
@@ -169,6 +177,15 @@ const AllLeads = () => {
             setEditingLead(viewingLead);
             setViewingLead(null);
           }}
+        />
+      )}
+
+      {showBankSelector && (
+        <BankSelectorModal
+          leads={leads}
+          currentBank={leadFilters.bankName}
+          onSelect={handleBankSelect}
+          onClose={() => setShowBankSelector(false)}
         />
       )}
     </Layout>

@@ -4,6 +4,7 @@ import { useCreateLead } from "../../hooks/useLeads";
 import { useSalespersons } from "../../hooks/useUsers";
 import useUIStore from "../../store/useUIStore";
 import { useNavigate } from "react-router-dom";
+import { BANK_LIST } from "../../utils/bankList";
 import "../../components/sales/LeadForm.css";
 
 const AdminAddLead = () => {
@@ -13,7 +14,7 @@ const AdminAddLead = () => {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    assignedTo: "", // Admin selects which salesperson
+    assignedTo: "",
     visitDate: "",
     callingDate: "",
     followUpDate: "",
@@ -32,7 +33,7 @@ const AdminAddLead = () => {
     constitution: "",
     machine: "",
     remark: "",
-    bankName: "",
+    bankName: "", // Will be dropdown
     visitType: "office",
     sanction: false,
     sanctionDate: "",
@@ -94,7 +95,7 @@ const AdminAddLead = () => {
 
       <form className="lead-form card" onSubmit={handleSubmit}>
         
-        {/* ASSIGN TO SALESPERSON */}
+        {/* ASSIGN TO */}
         <div className="lead-form__section">
           <div className="lead-form__section-icon">👤</div>
           <div>
@@ -115,7 +116,6 @@ const AdminAddLead = () => {
           {errors.assignedTo && <span className="form-error">{errors.assignedTo}</span>}
         </div>
 
-        {/* REST OF THE FORM - SAME AS SALES LEADFORM */}
         {/* DATES */}
         <div className="lead-form__section">
           <div className="lead-form__section-icon">📅</div>
@@ -256,7 +256,7 @@ const AdminAddLead = () => {
             onChange={handleChange} />
         </div>
 
-        {/* BANKING */}
+        {/* BANKING - WITH DROPDOWN */}
         <div className="lead-form__section">
           <div className="lead-form__section-icon">🏦</div>
           <div><div className="lead-form__section-title">Banking & Visit</div></div>
@@ -265,8 +265,13 @@ const AdminAddLead = () => {
         <div className="lead-form__grid lead-form__grid--2">
           <div className="form-group">
             <label className="form-label">Bank Name</label>
-            <input className="form-input" name="bankName" value={form.bankName}
-              onChange={handleChange} />
+            <select className="form-select" name="bankName" value={form.bankName}
+              onChange={handleChange}>
+              <option value="">-- Select Bank --</option>
+              {BANK_LIST.map((bank) => (
+                <option key={bank} value={bank}>{bank}</option>
+              ))}
+            </select>
           </div>
           <div className="form-group">
             <label className="form-label">Visit Type</label>

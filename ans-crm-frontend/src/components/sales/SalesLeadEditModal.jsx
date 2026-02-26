@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
 import { useUpdateLead } from "../../hooks/useLeads";
-import { useSalespersons } from "../../hooks/useUsers";
 import useUIStore from "../../store/useUIStore";
 import { BANK_LIST } from "../../utils/bankList";
-import "./AdminLeadEditModal.css";
+import "./SalesLeadEditModal.css";
 
-const AdminLeadEditModal = ({ lead, onClose }) => {
+const SalesLeadEditModal = ({ lead, onClose }) => {
   const { mutate: updateLead, isPending } = useUpdateLead();
-  const { data: salespeople } = useSalespersons();
   const { showToast } = useUIStore();
 
   const [form, setForm] = useState({});
@@ -15,7 +13,6 @@ const AdminLeadEditModal = ({ lead, onClose }) => {
   useEffect(() => {
     if (lead) {
       setForm({
-        assignedTo: lead.assignedTo?._id || lead.assignedTo || "",
         visitDate: lead.visitDate ? lead.visitDate.split("T")[0] : "",
         callingDate: lead.callingDate ? lead.callingDate.split("T")[0] : "",
         followUpDate: lead.followUpDate ? lead.followUpDate.split("T")[0] : "",
@@ -59,10 +56,10 @@ const AdminLeadEditModal = ({ lead, onClose }) => {
       { id: lead._id, data: form },
       {
         onSuccess: () => {
-          showToast("Lead updated successfully");
+          showToast("Visit updated successfully");
           onClose();
         },
-        onError: () => showToast("Failed to update lead", "error"),
+        onError: () => showToast("Failed to update visit", "error"),
       }
     );
   };
@@ -71,63 +68,18 @@ const AdminLeadEditModal = ({ lead, onClose }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="admin-edit-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="sales-edit-modal" onClick={(e) => e.stopPropagation()}>
         
-        <div className="admin-edit-modal__header">
-          <h2>Edit Lead #{lead.srNo}</h2>
-          <button className="admin-edit-modal__close" onClick={onClose}>✕</button>
+        <div className="sales-edit-modal__header">
+          <h2>Edit Visit #{lead.srNo}</h2>
+          <button className="sales-edit-modal__close" onClick={onClose}>✕</button>
         </div>
 
-        <form onSubmit={handleSubmit} className="admin-edit-modal__body">
+        <form onSubmit={handleSubmit} className="sales-edit-modal__body">
           
-          {/* REASSIGN */}
-          <div className="admin-edit-modal__section">Reassignment</div>
-          <div className="form-group">
-            <label className="form-label">Assigned To</label>
-            <select className="form-select" name="assignedTo" value={form.assignedTo}
-              onChange={handleChange}>
-              {salespeople?.map((sp) => (
-                <option key={sp._id} value={sp._id}>{sp.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* CLIENT */}
-          <div className="admin-edit-modal__section">Client Info</div>
-          <div className="admin-edit-modal__grid">
-            <div className="form-group">
-              <label className="form-label">Firm Name</label>
-              <input className="form-input" name="firmName" value={form.firmName}
-                onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Person Name</label>
-              <input className="form-input" name="personName" value={form.personName}
-                onChange={handleChange} required />
-            </div>
-          </div>
-
-          <div className="admin-edit-modal__grid admin-edit-modal__grid--3">
-            <div className="form-group">
-              <label className="form-label">Designation</label>
-              <input className="form-input" name="designation" value={form.designation}
-                onChange={handleChange} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Mobile</label>
-              <input className="form-input" name="mobileNo" value={form.mobileNo}
-                onChange={handleChange} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Email</label>
-              <input className="form-input" name="email" value={form.email}
-                onChange={handleChange} />
-            </div>
-          </div>
-
           {/* DATES */}
-          <div className="admin-edit-modal__section">Dates</div>
-          <div className="admin-edit-modal__grid admin-edit-modal__grid--3">
+          <div className="sales-edit-modal__section">Visit Dates</div>
+          <div className="sales-edit-modal__grid sales-edit-modal__grid--3">
             <div className="form-group">
               <label className="form-label">Visit Date</label>
               <input className="form-input" name="visitDate" type="date"
@@ -145,8 +97,41 @@ const AdminLeadEditModal = ({ lead, onClose }) => {
             </div>
           </div>
 
+          {/* CLIENT */}
+          <div className="sales-edit-modal__section">Client Info</div>
+          <div className="sales-edit-modal__grid">
+            <div className="form-group">
+              <label className="form-label">Firm Name</label>
+              <input className="form-input" name="firmName" value={form.firmName}
+                onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Person Name</label>
+              <input className="form-input" name="personName" value={form.personName}
+                onChange={handleChange} required />
+            </div>
+          </div>
+
+          <div className="sales-edit-modal__grid sales-edit-modal__grid--3">
+            <div className="form-group">
+              <label className="form-label">Designation</label>
+              <input className="form-input" name="designation" value={form.designation}
+                onChange={handleChange} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Mobile</label>
+              <input className="form-input" name="mobileNo" value={form.mobileNo}
+                onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <input className="form-input" name="email" value={form.email}
+                onChange={handleChange} />
+            </div>
+          </div>
+
           {/* ADDRESS */}
-          <div className="admin-edit-modal__section">Address</div>
+          <div className="sales-edit-modal__section">Address</div>
           <div className="form-group">
             <label className="form-label">Area/Estate</label>
             <input className="form-input" name="areaEstate" value={form.areaEstate}
@@ -157,7 +142,7 @@ const AdminLeadEditModal = ({ lead, onClose }) => {
             <textarea className="form-textarea" name="address" value={form.address}
               onChange={handleChange} />
           </div>
-          <div className="admin-edit-modal__grid admin-edit-modal__grid--3">
+          <div className="sales-edit-modal__grid sales-edit-modal__grid--3">
             <div className="form-group">
               <label className="form-label">District</label>
               <input className="form-input" name="district" value={form.district}
@@ -176,8 +161,8 @@ const AdminLeadEditModal = ({ lead, onClose }) => {
           </div>
 
           {/* BUSINESS */}
-          <div className="admin-edit-modal__section">Business</div>
-          <div className="admin-edit-modal__grid admin-edit-modal__grid--3">
+          <div className="sales-edit-modal__section">Business</div>
+          <div className="sales-edit-modal__grid sales-edit-modal__grid--3">
             <div className="form-group">
               <label className="form-label">Industry</label>
               <input className="form-input" name="industry" value={form.industry}
@@ -202,8 +187,8 @@ const AdminLeadEditModal = ({ lead, onClose }) => {
           </div>
 
           {/* BANKING - WITH DROPDOWN */}
-          <div className="admin-edit-modal__section">Banking & Financial</div>
-          <div className="admin-edit-modal__grid">
+          <div className="sales-edit-modal__section">Banking & Financial</div>
+          <div className="sales-edit-modal__grid">
             <div className="form-group">
               <label className="form-label">Bank Name</label>
               <select className="form-select" name="bankName" value={form.bankName}
@@ -224,7 +209,7 @@ const AdminLeadEditModal = ({ lead, onClose }) => {
             </div>
           </div>
 
-          <div className="admin-edit-modal__grid admin-edit-modal__grid--3">
+          <div className="sales-edit-modal__grid sales-edit-modal__grid--3">
             <div className="form-group">
               <label className="form-checkbox">
                 <input type="checkbox" name="sanction" checked={form.sanction}
@@ -244,7 +229,7 @@ const AdminLeadEditModal = ({ lead, onClose }) => {
             </div>
           </div>
 
-          <div className="admin-edit-modal__grid">
+          <div className="sales-edit-modal__grid">
             <div className="form-group">
               <label className="form-checkbox">
                 <input type="checkbox" name="meetingScheduled"
@@ -260,8 +245,8 @@ const AdminLeadEditModal = ({ lead, onClose }) => {
           </div>
 
           {/* PROJECT */}
-          <div className="admin-edit-modal__section">Project</div>
-          <div className="admin-edit-modal__grid admin-edit-modal__grid--3">
+          <div className="sales-edit-modal__section">Project</div>
+          <div className="sales-edit-modal__grid sales-edit-modal__grid--3">
             <div className="form-group">
               <label className="form-label">Type</label>
               <select className="form-select" name="projectType" value={form.projectType}
@@ -291,7 +276,7 @@ const AdminLeadEditModal = ({ lead, onClose }) => {
               onChange={handleChange} />
           </div>
 
-          <div className="admin-edit-modal__footer">
+          <div className="sales-edit-modal__footer">
             <button type="button" className="btn btn--ghost" onClick={onClose}>
               Cancel
             </button>
@@ -305,4 +290,4 @@ const AdminLeadEditModal = ({ lead, onClose }) => {
   );
 };
 
-export default AdminLeadEditModal;
+export default SalesLeadEditModal;

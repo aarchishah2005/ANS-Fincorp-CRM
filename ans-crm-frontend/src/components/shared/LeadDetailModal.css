@@ -1,0 +1,125 @@
+.lead-detail-modal {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: scaleIn 0.2s ease;
+}
+
+.lead-detail-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 32px 32px 20px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.lead-detail-modal__srno {
+  font-size: 12px;
+  font-weight: 700;
+  color: #667eea;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.lead-detail-modal__title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1a202c;
+  margin: 0;
+}
+
+.lead-detail-modal__close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #718096;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.lead-detail-modal__close:hover {
+  background: #f7fafc;
+  color: #1a202c;
+}
+
+.lead-detail-modal__body {
+  padding: 24px 32px;
+}
+
+.lead-detail-section {
+  margin-bottom: 28px;
+}
+
+.lead-detail-section__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.lead-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.lead-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lead-detail-item--full {
+  grid-column: 1 / -1;
+}
+
+.lead-detail-item__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.lead-detail-item__value {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a202c;
+}
+
+.lead-detail-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 32px 32px;
+  border-top: 2px solid #e2e8f0;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .lead-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}

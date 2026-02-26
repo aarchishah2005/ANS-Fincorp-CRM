@@ -1,0 +1,72 @@
+.my-leads__filters {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  padding: 20px;
+}
+
+.my-leads-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.my-leads-table thead {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+}
+
+.my-leads-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.my-leads-table td {
+  padding: 16px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #4a5568;
+  vertical-align: middle;
+}
+
+.my-leads-table tbody tr:hover td {
+  background: #f7fafc;
+}
+
+.my-leads-table__srno {
+  font-weight: 700;
+  color: #10b981 !important;
+}
+
+.my-leads-table__firm-btn {
+  background: none;
+  border: none;
+  color: #10b981;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  text-align: left;
+}
+
+.my-leads-table__firm-btn:hover {
+  color: #059669;
+}
+
+.my-leads-table__sanction {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.my-leads-table__amount {
+  font-weight: 600;
+  color: #10b981 !important;
+}

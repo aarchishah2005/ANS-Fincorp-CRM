@@ -80,3 +80,21 @@
   display: flex;
   gap: 8px;
 }
+
+.btn--outline {
+  background: #fff;
+  border: 2px solid #667eea;
+  color: #667eea;
+  font-weight: 600;
+}
+
+.btn--outline:hover {
+  background: #f0f4ff;
+  border-color: #4338ca;
+  color: #4338ca;
+}
+
+.all-leads__bank-btn {
+  min-width: 160px;
+  justify-content: flex-start;
+}
