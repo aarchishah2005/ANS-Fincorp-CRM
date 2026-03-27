@@ -2,10 +2,11 @@ const express = require("express");
 const cors    = require("cors");
 const morgan  = require("morgan");
 
-const authRoutes   = require("./routes/auth.routes");
-const leadRoutes   = require("./routes/lead.routes");
-const userRoutes   = require("./routes/user.routes");
-const reportRoutes = require("./routes/report.routes");
+const authRoutes         = require("./routes/auth.routes");
+const leadRoutes         = require("./routes/lead.routes");
+const userRoutes         = require("./routes/user.routes");
+const reportRoutes       = require("./routes/report.routes");
+const notificationRoutes = require("./routes/notificationRoutes"); // ✅ NEW
 
 const app = express();
 
@@ -20,10 +21,11 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-app.use("/api/auth",    authRoutes);
-app.use("/api/leads",   leadRoutes);
-app.use("/api/users",   userRoutes);
-app.use("/api/reports", reportRoutes);
+app.use("/api/auth",          authRoutes);
+app.use("/api/leads",         leadRoutes);
+app.use("/api/users",         userRoutes);
+app.use("/api/reports",       reportRoutes);
+app.use("/api/notifications", notificationRoutes); // ✅ NEW
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });

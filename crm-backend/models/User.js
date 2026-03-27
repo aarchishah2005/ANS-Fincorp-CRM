@@ -1,3 +1,4 @@
+// models/User.js  ← REPLACE your existing file with this
 const mongoose = require("mongoose");
 const bcrypt   = require("bcryptjs");
 
@@ -9,23 +10,42 @@ const userSchema = new mongoose.Schema(
       trim:     true,
     },
     email: {
-      type:     String,
-      required: [true, "Email is required"],
-      unique:   true,
+      type:      String,
+      required:  [true, "Email is required"],
+      unique:    true,
       lowercase: true,
-      trim:     true,
+      trim:      true,
     },
     password: {
-      type:     String,
-      required: [true, "Password is required"],
+      type:      String,
+      required:  [true, "Password is required"],
       minlength: 6,
-      select:   false,
+      select:    false,
     },
     role: {
       type:    String,
       enum:    ["admin", "sales"],
       default: "sales",
     },
+
+    // ── Reminder tick storage ──────────────────────────────────
+    // Each entry = one ticked reminder (leadId + field uniquely identify it)
+    doneReminders: [
+      {
+        leadId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref:  "Lead",
+        },
+        field: {
+          type: String,
+          enum: ["callingDate", "followUpDate", "visitDate"],
+        },
+        doneAt: {
+          type:    Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );

@@ -1,420 +1,377 @@
-╔══════════════════════════════════════════════════════════════════╗
-║          CRM BACKEND ARCHITECTURE  —  Node + Express + MongoDB   ║
-╚══════════════════════════════════════════════════════════════════╝
-
-  Two Roles:
-    ADMIN  → full access to everything
-    SALES  → can only touch their own leads and clients
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  1. COMPLETE FOLDER STRUCTURE  (expanded from your base)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  crm-backend/
-  │
-  ├── config/
-  │   └── db.js                  ← MongoDB connection setup
-  │
-  ├── models/
-  │   ├── User.js                ← salesperson / admin schema
-  │   ├── Lead.js                ← lead schema
-  │   └── Client.js              ← client schema
-  │
-  ├── routes/
-  │   ├── auth.routes.js         ← /api/auth/*
-  │   ├── lead.routes.js         ← /api/leads/*
-  │   ├── client.routes.js       ← /api/clients/*
-  │   ├── user.routes.js         ← /api/users/*  (admin only)
-  │   └── report.routes.js       ← /api/reports/* (admin only)
-  │
-  ├── controllers/
-  │   ├── auth.controller.js
-  │   ├── lead.controller.js
-  │   ├── client.controller.js
-  │   ├── user.controller.js
-  │   └── report.controller.js
-  │
-  ├── services/
-  │   ├── auth.service.js
-  │   ├── lead.service.js
-  │   ├── client.service.js
-  │   ├── user.service.js
-  │   └── report.service.js
-  │
-  ├── middleware/
-  │   ├── auth.middleware.js     ← verifies JWT token
-  │   └── role.middleware.js     ← checks if role is allowed
-  │
-  ├── utils/
-  │   └── generateToken.js       ← creates JWT token
-  │
-  ├── app.js                     ← express setup, middleware, routes
-  └── server.js                  ← starts the server on a port
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  2. HOW A REQUEST FLOWS  (every request takes this path)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  Frontend sends request
-         ↓
-  app.js  (express receives it)
-         ↓
-  auth.middleware.js  (is there a valid JWT token?)
-    NO  → return 401 Unauthorized, stop here
-    YES → attach user info to req.user, continue
-         ↓
-  role.middleware.js  (does this role have permission for this route?)
-    NO  → return 403 Forbidden, stop here
-    YES → continue
-         ↓
-  route file  (e.g. lead.routes.js decides which controller to call)
-         ↓
-  controller  (handles the HTTP request/response)
-         ↓
-  service  (contains the actual business logic + DB queries)
-         ↓
-  MongoDB  (data is read or written)
-         ↓
-  service returns result to controller
-         ↓
-  controller sends JSON response back to frontend
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  3. ALL API ENDPOINTS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  ── AUTH  (/api/auth) ───────────────────────────────────────────
-
-  POST   /api/auth/login          anyone    Email + password → returns JWT
-  POST   /api/auth/logout         logged in  Clears token
-  GET    /api/auth/me             logged in  Returns current user info
-
-
-  ── LEADS  (/api/leads) ─────────────────────────────────────────
-
-  GET    /api/leads               logged in  Get leads
-                                             Admin → gets ALL leads
-                                             Sales → gets only their leads
-                                             (filtered by assignedTo in service)
+# ANS Fincorp CRM – Backend Architecture
+
+Node.js + Express + MongoDB
+
+Roles:
+
+* ADMIN → Full access
+* SALES → Limited to own data
+
+---
+
+# 1️⃣ Current Backend Folder Structure (As Per Project)
+
+```
+crm-backend/
+│
+├── config/
+│   └── db.js
+│
+├── controllers/
+│   ├── auth.controller.js
+│   ├── lead.controller.js
+│   ├── report.controller.js
+│   └── user.controller.js
+│
+├── middleware/
+│   ├── auth.middleware.js
+│   └── role.middleware.js
+│
+├── models/
+│   ├── Lead.js
+│   └── User.js
+│
+├── routes/
+│   ├── auth.routes.js
+│   ├── lead.routes.js
+│   ├── report.routes.js
+│   └── user.routes.js
+│
+├── services/
+│   ├── auth.service.js
+│   ├── lead.service.js
+│   ├── report.service.js
+│   └── user.service.js
+│
+├── utils/
+│   ├── generateToken.js
+│   └── seed.js
+│
+├── app.js
+├── server.js
+├── seedLeads.js
+├── seedUsers.js
+└── .env
+```
+
+---
+
+# 2️⃣ Backend Request Flow (How Every API Call Works)
+
+Frontend Request
+↓
+app.js (Express receives request)
+↓
+auth.middleware.js (Validates JWT token)
+↓
+role.middleware.js (Checks role permission if required)
+↓
+routes/*.routes.js (Decides which controller to call)
+↓
+controllers/*.controller.js (Handles req & res)
+↓
+services/*.service.js (Business logic + DB query)
+↓
+MongoDB (Data read/write)
+↓
+Response sent back to frontend
 
-  POST   /api/leads               logged in  Create a new lead
-                                             assignedTo is set to req.user.id
+---
 
-  GET    /api/leads/:id           logged in  Get one lead
-                                             Sales can only get their own
+# 3️⃣ Responsibilities of Each Layer
 
-  PATCH  /api/leads/:id           logged in  Update a lead
-                                             Admin → can update any lead
-                                             Sales → can only update their own
+## 🔹 server.js
 
-  DELETE /api/leads/:id           admin only Delete a lead
+* Connects to MongoDB
+* Starts Express server
+* Reads PORT from .env
 
+---
 
-  ── CLIENTS  (/api/clients) ─────────────────────────────────────
+## 🔹 app.js
 
-  POST   /api/clients             logged in  Create a new client
-  GET    /api/clients             logged in  Search / list clients
-  GET    /api/clients/:id         logged in  Get one client
+* Creates express app
+* Adds middleware:
 
+  * express.json()
+  * cors()
+* Registers routes:
 
-  ── USERS  (/api/users) ─────────────────────────────────────────
+  * /api/auth
+  * /api/leads
+  * /api/users
+  * /api/reports
+* Global error handler
 
-  GET    /api/users               admin only List all salespersons
-  POST   /api/users               admin only Add a new salesperson
-  PATCH  /api/users/:id           admin only Edit a salesperson
-  DELETE /api/users/:id           admin only Remove a salesperson
+---
 
+## 🔹 config/db.js
 
-  ── REPORTS  (/api/reports) ─────────────────────────────────────
+* Connects to MongoDB using MONGO_URI
+* Handles connection success/failure
 
-  GET    /api/reports/summary     admin only  Total leads, conversions, revenue
-  GET    /api/reports/by-sales    admin only  Performance per salesperson
-  GET    /api/reports/by-date     admin only  Leads/revenue over time
+---
 
+## 🔹 routes/
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  4. DATABASE MODELS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Only defines:
 
-  User.js
-  ───────────────────────────────────────────────────────────────
-    _id          ObjectId       auto generated
-    name         String         required
-    email        String         required, unique
-    password     String         required, hashed with bcrypt
-    role         String         "admin" or "sales"
-    createdAt    Date           auto generated
+* URL
+* HTTP method
+* Middleware
+* Controller
 
+No business logic here.
 
-  Lead.js
-  ───────────────────────────────────────────────────────────────
-    _id          ObjectId       auto generated
-    title        String         lead title / name
-    status       String         "new" | "contacted" | "qualified"
-                                | "proposal" | "won" | "lost"
-    value        Number         deal value in currency
-    source       String         "website" | "referral" | "cold call" etc.
-    priority     String         "low" | "medium" | "high"
-    client       ObjectId       ref → Client
-    assignedTo   ObjectId       ref → User  (the salesperson)
-    notes        String         optional notes
-    createdAt    Date           auto generated
-    updatedAt    Date           auto updated
-
-
-  Client.js
-  ───────────────────────────────────────────────────────────────
-    _id          ObjectId       auto generated
-    name         String         required
-    email        String         required
-    phone        String         optional
-    company      String         optional
-    createdBy    ObjectId       ref → User (who added this client)
-    createdAt    Date           auto generated
-
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  5. MIDDLEWARE  (the security layer)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  auth.middleware.js
-  ───────────────────────────────────────────────────────────────
-    Purpose  → check that the request has a valid JWT token
-
-    Steps:
-      1. Read "Authorization" header from the request
-      2. Check it starts with "Bearer "
-      3. Extract the token part
-      4. Verify token with jwt.verify(token, JWT_SECRET)
-      5. If valid   → attach decoded user to req.user, call next()
-      6. If invalid → return 401 { message: "Not authorized" }
-      7. If expired → return 401 { message: "Token expired" }
-
-    Used on:  every route except POST /api/auth/login
+Example (lead.routes.js):
 
-
-  role.middleware.js
-  ───────────────────────────────────────────────────────────────
-    Purpose  → check that the logged-in user has the right role
-
-    How to use it in routes:
-      router.get("/users", protect, role("admin"), getUsers)
-      router.patch("/leads/:id", protect, role("admin", "sales"), updateLead)
-
-    Steps:
-      1. Read req.user.role  (set by auth.middleware.js)
-      2. Check if that role is in the allowed roles list
-      3. If YES → call next()
-      4. If NO  → return 403 { message: "Access denied" }
+* GET /api/leads
+* POST /api/leads
+* GET /api/leads/:id
+* PATCH /api/leads/:id
+* DELETE /api/leads/:id (admin only)
 
+---
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  6. EACH FILE'S RESPONSIBILITY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 🔹 controllers/
 
-  server.js
-  ───────────────────────────────────────────────────────────────
-    - Import app.js
-    - Connect to MongoDB using db.js
-    - Start listening on PORT (from .env)
-    - Log "Server running on port XXXX"
+Handles:
 
+* Reading req.body
+* Reading req.params
+* Reading req.query
+* Reading req.user
+* Sending response
+* Error handling (try/catch)
 
-  app.js
-  ───────────────────────────────────────────────────────────────
-    - Create express app
-    - Add middleware: express.json(), cors(), morgan (logging)
-    - Register all route files
-        app.use("/api/auth",    authRoutes)
-        app.use("/api/leads",   leadRoutes)
-        app.use("/api/clients", clientRoutes)
-        app.use("/api/users",   userRoutes)
-        app.use("/api/reports", reportRoutes)
-    - Add 404 handler for unknown routes
-    - Add global error handler at the bottom
+NO database logic here.
 
+---
 
-  config/db.js
-  ───────────────────────────────────────────────────────────────
-    - Read MONGO_URI from .env
-    - Call mongoose.connect()
-    - Log success or throw error
+## 🔹 services/
 
+This is the core logic layer.
 
-  routes/*.routes.js
-  ───────────────────────────────────────────────────────────────
-    - Define the URL + HTTP method for each endpoint
-    - Attach middleware (protect, role check)
-    - Point to the correct controller function
-    - NO business logic here, just wiring
+Responsibilities:
 
-    Example (lead.routes.js):
-      GET  /          → protect → getLeads
-      POST /          → protect → createLead
-      GET  /:id       → protect → getLeadById
-      PATCH/:id       → protect → updateLead
-      DELETE/:id      → protect → role("admin") → deleteLead
+* Build MongoDB query
+* Apply role-based filtering
+* Execute Mongoose queries
+* Return result
 
+All business logic belongs here.
 
-  controllers/*.controller.js
-  ───────────────────────────────────────────────────────────────
-    - Receive req and res
-    - Read data from req.body, req.params, req.query, req.user
-    - Call the service function with that data
-    - Send back the JSON response with correct status code
-    - Wrap in try/catch and call next(error) on failure
-    - NO database queries here, only req/res handling
+---
 
+## 🔹 middleware/
 
-  services/*.service.js
-  ───────────────────────────────────────────────────────────────
-    - Contains all business logic and database queries
-    - Uses Mongoose models to talk to MongoDB
-    - Does NOT know about req or res
-    - This is where the real work happens
+### auth.middleware.js
 
-    Example business logic in lead.service.js:
-      - If user is sales, automatically add  { assignedTo: userId }
-        to every query so they only see their own leads
-      - If user is admin, query has no assignedTo filter
+* Reads Authorization header
+* Verifies JWT token
+* Attaches user to req.user
+* Returns 401 if invalid
 
+### role.middleware.js
 
-  utils/generateToken.js
-  ───────────────────────────────────────────────────────────────
-    - Takes a user object
-    - Returns a signed JWT token using JWT_SECRET from .env
-    - Sets expiry (e.g. "7d")
+* Checks if user.role is allowed
+* Returns 403 if not allowed
 
+---
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  7. ROLE LOGIC IN THE SERVICE LAYER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 🔹 models/
 
-  This is the most important part.
-  The service checks the role and builds the query accordingly.
+### User.js
 
-  getLeads(user)
-  ───────────────────────────────────────────────────────────────
-    IF user.role === "admin"
-      query = {}                      ← no filter, get everything
+Fields:
 
-    IF user.role === "sales"
-      query = { assignedTo: user.id } ← only their leads
+* name
+* email (unique)
+* password (hashed)
+* role (admin | sales)
+* timestamps
 
-    return Lead.find(query)
+---
 
+### Lead.js
 
-  updateLead(leadId, data, user)
-  ───────────────────────────────────────────────────────────────
-    IF user.role === "admin"
-      find and update lead by id only
+Contains:
 
-    IF user.role === "sales"
-      find lead where _id = leadId AND assignedTo = user.id
-      if not found → throw error "not your lead"
+* srNo
+* assignedTo (ref User)
+* firmName
+* personName
+* mobileNo
+* visitDate
+* callingDate
+* followUpDate
+* bankName
+* sanction
+* sanctionDate
+* amount
+* projectType
+* projectStatus
+* timestamps
 
+---
 
-  createLead(data, user)
-  ───────────────────────────────────────────────────────────────
-    always set  data.assignedTo = user.id
-    regardless of role
+# 4️⃣ API Endpoints Summary
 
+## AUTH
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  8. PERMISSION TABLE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+POST   /api/auth/login
+GET    /api/auth/me
 
-  Endpoint                        ADMIN       SALES
-  ──────────────────────────────  ──────────  ──────────────────
-  POST   /api/auth/login          YES         YES
-  GET    /api/auth/me             YES         YES
+---
 
-  GET    /api/leads               YES (all)   YES (own only)
-  POST   /api/leads               YES         YES
-  GET    /api/leads/:id           YES         YES (own only)
-  PATCH  /api/leads/:id           YES (any)   YES (own only)
-  DELETE /api/leads/:id           YES         NO
+## LEADS
 
-  POST   /api/clients             YES         YES
-  GET    /api/clients             YES         YES
+GET    /api/leads
 
-  GET    /api/users               YES         NO
-  POST   /api/users               YES         NO
-  PATCH  /api/users/:id           YES         NO
-  DELETE /api/users/:id           YES         NO
+* Admin → gets all leads
+* Sales → gets only their leads
 
-  GET    /api/reports/*           YES         NO
+POST   /api/leads
+PATCH  /api/leads/:id
+DELETE /api/leads/:id (admin only)
 
+---
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  9. ENVIRONMENT VARIABLES  (.env file)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## USERS (Admin Only)
 
-  PORT=5000
-  MONGO_URI=mongodb://localhost:27017/crm
-  JWT_SECRET=your_very_long_random_secret_key
-  JWT_EXPIRES_IN=7d
-  NODE_ENV=development
+GET    /api/users
+POST   /api/users
+PATCH  /api/users/:id
+DELETE /api/users/:id
 
+---
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  10. ERROR HANDLING PATTERN
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## REPORTS (Admin Only)
 
-  Every controller wraps code in try/catch:
+GET /api/reports/summary
+GET /api/reports/by-sales
+GET /api/reports/by-date
 
-    try {
-      const result = await leadService.getLeads(req.user)
-      res.status(200).json(result)
-    } catch (error) {
-      next(error)   ← passes to global error handler in app.js
-    }
+---
 
-  Global error handler in app.js:
+# 5️⃣ Role-Based Data Scoping (Important Logic)
 
-    app.use((err, req, res, next) => {
-      const status = err.status || 500
-      res.status(status).json({ message: err.message })
-    })
+Inside lead.service.js:
 
-  Common HTTP status codes used:
-    200 → OK (success, return data)
-    201 → Created (new resource made)
-    400 → Bad Request (missing/invalid fields)
-    401 → Unauthorized (no token or bad token)
-    403 → Forbidden (valid token but wrong role)
-    404 → Not Found (lead/user doesn't exist)
-    500 → Server Error (something broke)
+### getLeads(user)
 
+If user.role === "admin"
+→ Query = {}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  11. QUICK TIPS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+If user.role === "sales"
+→ Query = { assignedTo: user._id }
 
-  - Never put business logic in routes or controllers.
-    Routes = wiring.  Controllers = req/res.  Services = logic.
+Return Lead.find(query)
 
-  - Never store plain text passwords.
-    Always hash with bcrypt before saving to MongoDB.
+---
 
-  - Never send the password field back in any response.
-    Use .select("-password") in your Mongoose queries.
+### updateLead(leadId, data, user)
 
-  - Always validate req.body before using it.
-    Add a validation library like express-validator or Joi.
+If admin
+→ update by ID
 
-  - The role check in middleware is for route access.
-    The role check in service is for data scoping.
-    You need BOTH.
+If sales
+→ update only if:
+{ _id: leadId, assignedTo: user._id }
 
-  - Sales scoping must happen in the service, not the frontend.
-    A sales user should never receive another rep's lead,
-    even if they somehow call the API directly.
+If not found
+→ Throw error "Access denied"
 
-  - Keep JWT_SECRET long and random. Never commit it to git.
-    Add .env to your .gitignore file.
+---
 
-══════════════════════════════════════════════════════════════════
+### createLead(data, user)
+
+Always:
+data.assignedTo = user._id
+
+Even if admin creates lead.
+
+---
+
+# 6️⃣ Permission Matrix
+
+| Action          | Admin | Sales |
+| --------------- | ----- | ----- |
+| View All Leads  | YES   | NO    |
+| View Own Leads  | YES   | YES   |
+| Edit Any Lead   | YES   | NO    |
+| Edit Own Lead   | YES   | YES   |
+| Delete Lead     | YES   | NO    |
+| Add Salesperson | YES   | NO    |
+| View Reports    | YES   | NO    |
+
+---
+
+# 7️⃣ Environment Variables (.env)
+
+PORT=5000
+MONGO_URI=your_mongodb_url
+JWT_SECRET=your_secret_key
+JWT_EXPIRES_IN=7d
+
+---
+
+# 8️⃣ Error Handling Pattern
+
+Controller:
+
+```
+try {
+  const data = await serviceFunction()
+  res.status(200).json(data)
+} catch (error) {
+  next(error)
+}
+```
+
+Global Error Handler in app.js:
+
+```
+app.use((err, req, res, next) => {
+  res.status(err.status || 500).json({
+    message: err.message
+  })
+})
+```
+
+---
+
+# 9️⃣ Current Improvement Points (Based On Your New Requirements)
+
+1. Bank filter logic needs improvement in lead.service.js
+2. Bank should move to separate Bank collection
+3. Add bank.routes.js, bank.controller.js, bank.service.js
+4. Add conditional bank visibility logic
+5. Add location-based filtering in GET /api/leads
+6. Add follow-up reminder query logic
+7. Plan database refactor for Company, Contact, Project collections
+
+---
+
+# 🔟 Recommended Next Phase (Upgrade Plan)
+
+Phase 1:
+
+* Fix filtering logic
+* Add dynamic bank management
+* Add location filtering
+
+Phase 2:
+
+* Refactor DB into:
+
+  * Company
+  * Contact
+  * Project
+  * Bank
+  * CompanyGroup
+
+Phase 3:
+
+* Add dashboard analytics improvements
+* Add follow-up notification system

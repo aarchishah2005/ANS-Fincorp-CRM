@@ -1,21 +1,325 @@
-User Model
-{
-  name: String,
-  email: String,
-  password: String,
-  role: { type: String, enum: ["admin", "sales"], default: "sales" }
-}
+```
+MongoDBSchema.txt
+```
 
-Lead Model
+---
+
+# ANS Fincorp CRM – MongoDB Schema Design
+
+(Updated & Scalable Structure)
+
+---
+
+# 1️⃣ User Collection
+
+Collection Name: `users`
+
+Purpose:
+Stores Admin and Sales users.
+
+Schema:
+
+```
 {
-  firm_name: String,
-  person_name: String,
-  mobile: String,
+  _id: ObjectId,
+
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true
+  },
+
+  password: {
+    type: String,
+    required: true
+  },
+
+  role: {
+    type: String,
+    enum: ["admin", "sales"],
+    default: "sales"
+  },
+
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+---
+
+# 2️⃣ Company Group Collection
+
+Collection Name: `company_groups`
+
+Purpose:
+Supports group-level company hierarchy.
+
+Example:
+Packing Group
+→ Packaging Solutions
+→ Packaging Collection
+
+Schema:
+
+```
+{
+  _id: ObjectId,
+
+  groupName: {
+    type: String,
+    required: true
+  },
+
+  description: String,
+
+  createdBy: ObjectId (ref: users),
+
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+---
+
+# 3️⃣ Company Collection
+
+Collection Name: `companies`
+
+Purpose:
+Stores company-level details separately from leads.
+
+Schema:
+
+```
+{
+  _id: ObjectId,
+
+  firmName: {
+    type: String,
+    required: true
+  },
+
+  industry: String,
+  segment: String,
+  constitution: String,
+
+  officeAddress: String,
+  factoryAddress: String,
+
+  areaEstate: String,
   district: String,
-  amount: Number,
-  project_status: String,
-  created_by: ObjectId (ref: User),
-  created_at: Date
+  state: String,
+  pincode: String,
+
+  groupId: ObjectId (ref: company_groups),
+
+  createdBy: ObjectId (ref: users),
+
+  createdAt: Date,
+  updatedAt: Date
 }
+```
 
+---
 
+# 4️⃣ Contact Collection
+
+Collection Name: `contacts`
+
+Purpose:
+Supports multiple contacts under one company.
+
+Schema:
+
+```
+{
+  _id: ObjectId,
+
+  companyId: {
+    type: ObjectId,
+    ref: companies,
+    required: true
+  },
+
+  name: {
+    type: String,
+    required: true
+  },
+
+  designation: String,
+  mobile: String,
+  email: String,
+
+  isPrimary: {
+    type: Boolean,
+    default: false
+  },
+
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+---
+
+# 5️⃣ Bank Collection
+
+Collection Name: `banks`
+
+Purpose:
+Admin-managed bank list (instead of static bankList.js)
+
+Schema:
+
+```
+{
+  _id: ObjectId,
+
+  name: {
+    type: String,
+    required: true
+  },
+
+  code: {
+    type: String,
+    required: true,
+    unique: true
+  },
+
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+
+  createdBy: ObjectId (ref: users),
+
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+---
+
+# 6️⃣ Lead Collection
+
+Collection Name: `leads`
+
+Purpose:
+Tracks visits, calls, follow-ups, and activity.
+
+Schema:
+
+```
+{
+  _id: ObjectId,
+
+  srNo: Number,
+
+  companyId: {
+    type: ObjectId,
+    ref: companies,
+    required: true
+  },
+
+  contactId: {
+    type: ObjectId,
+    ref: contacts
+  },
+
+  assignedTo: {
+    type: ObjectId,
+    ref: users,
+    required: true
+  },
+
+  visitDate: Date,
+  callingDate: Date,
+  followUpDate: Date,
+
+  visitType: {
+    type: String,
+    enum: ["office", "meeting"]
+  },
+
+  remark: String,
+
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+---
+
+# 7️⃣ Project Collection
+
+Collection Name: `projects`
+
+Purpose:
+Handles Loan / Subsidy related data.
+
+Schema:
+
+```
+{
+  _id: ObjectId,
+
+  companyId: {
+    type: ObjectId,
+    ref: companies,
+    required: true
+  },
+
+  bankId: {
+    type: ObjectId,
+    ref: banks
+  },
+
+  projectType: {
+    type: String,
+    enum: ["loan", "subsidy"]
+  },
+
+  sanction: {
+    type: Boolean,
+    default: false
+  },
+
+  sanctionDate: Date,
+
+  amount: {
+    type: Number,
+    default: 0
+  },
+
+  projectStatus: String,
+
+  ansClientType: {
+    type: String,
+    enum: ["ans_client", "other"]
+  },
+
+  createdBy: ObjectId (ref: users),
+
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+---
+
+# 🔹 Summary of Final Collections
+
+1. users
+2. company_groups
+3. companies
+4. contacts
+5. banks
+6. leads
+7. projects

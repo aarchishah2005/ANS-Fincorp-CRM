@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({ path: "../.env" });
 const mongoose = require("mongoose");
 const User = require("../models/User");
 const Lead = require("../models/Lead");
@@ -452,6 +452,7 @@ const seedData = async () => {
     console.log("  - Loan: 15");
     console.log("  - Subsidy: 5");
     console.log("════════════════════════════════════════════════\n");
+    console.log("MONGO_URI:", process.env.MONGO_URI);
 
     process.exit(0);
   } catch (error) {

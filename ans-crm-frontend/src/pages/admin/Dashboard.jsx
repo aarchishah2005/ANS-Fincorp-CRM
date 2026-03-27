@@ -1,6 +1,8 @@
+// pages/admin/Dashboard.jsx  ← REPLACE your existing file with this
 import Layout from "../../components/shared/Layout";
 import StatsCards from "../../components/admin/StatsCards";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
+import NotificationPanel from "../../components/shared/NotificationPanel";
 import { useReportSummary } from "../../hooks/useReports";
 
 const AdminDashboard = () => {
@@ -19,6 +21,8 @@ const AdminDashboard = () => {
 
       <StatsCards stats={summary?.stats || {}} />
 
+      {/* ── REMINDERS PANEL (new) ─────────────────────────────── */}
+      <NotificationPanel />
       <div className="card">
         <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "12px" }}>
           Welcome to ANS CRM Admin Dashboard

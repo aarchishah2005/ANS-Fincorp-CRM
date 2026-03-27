@@ -1,6 +1,8 @@
+// pages/sales/SalesDashboard.jsx  ← REPLACE your existing file with this
 import { useNavigate } from "react-router-dom";
 import Layout from "../../components/shared/Layout";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
+import NotificationPanel from "../../components/shared/NotificationPanel";
 import { useLeads } from "../../hooks/useLeads";
 import "./SalesDashboard.css";
 
@@ -43,6 +45,10 @@ const SalesDashboard = () => {
         </div>
       </div>
 
+      {/* ── REMINDERS PANEL (new) ─────────────────────────────── */}
+      <NotificationPanel />
+
+      {/* Recent Visits */}
       <div className="card">
         <div className="sales-dash__recent-header">
           <h3>Recent Visits</h3>
