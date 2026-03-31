@@ -1,12 +1,144 @@
+/* ── Main filter bar ─────────────────────────────────────────────────────── */
 .my-leads__filters {
   display: flex;
   gap: 12px;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
   padding: 20px;
 }
 
+/* ── Location & Group filter panel (Enhancement 1 + 5) ──────────────────── */
+.my-leads__location-filters {
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  border: 2px solid #e2e8f0;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.my-leads__location-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a202c;
+  margin-bottom: 16px;
+}
+
+.my-leads__location-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1100px) {
+  .my-leads__location-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 700px) {
+  .my-leads__location-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── Active filter chips ─────────────────────────────────────────────────── */
+.my-leads__filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.my-leads__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0fdf4;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.my-leads__chip button {
+  background: none;
+  border: none;
+  color: #059669;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+}
+
+.my-leads__chip--group {
+  background: #fdf4ff;
+  border-color: #e9d5ff;
+  color: #7c3aed;
+}
+
+.my-leads__chip--group button { color: #7c3aed; }
+
+/* Badge on location button */
+.my-leads__filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: #10b981;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+/* Location / Group filter button */
+.my-leads__location-btn {
+  min-width: 160px;
+  justify-content: flex-start;
+}
+
+.btn--outline {
+  background: #fff;
+  border: 2px solid #10b981;
+  color: #10b981;
+  font-weight: 600;
+}
+.btn--outline:hover {
+  background: #f0fdf4;
+}
+
+/* ── Group tag in table (Enhancement 5) ──────────────────────────────────── */
+.my-leads__group-tag {
+  background: #fdf4ff;
+  border: 1px solid #e9d5ff;
+  color: #7c3aed;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.my-leads__group-tag:hover {
+  background: #ede9fe;
+  border-color: #c4b5fd;
+}
+
+/* ── Location column ──────────────────────────────────────────────────────── */
+.my-leads-table__location {
+  font-size: 13px;
+  color: #718096 !important;
+  white-space: nowrap;
+}
+
+/* ── Table styles (kept from original + additions) ──────────────────────── */
 .my-leads-table {
   width: 100%;
   border-collapse: collapse;
@@ -56,9 +188,7 @@
   text-align: left;
 }
 
-.my-leads-table__firm-btn:hover {
-  color: #059669;
-}
+.my-leads-table__firm-btn:hover { color: #059669; }
 
 .my-leads-table__sanction {
   font-size: 18px;

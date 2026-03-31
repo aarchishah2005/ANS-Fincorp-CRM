@@ -1,5 +1,29 @@
 const mongoose = require("mongoose");
 
+// Sub-schema for multiple contacts per company (Enhancement 3)
+const contactSchema = new mongoose.Schema(
+  {
+    personName: { type: String, trim: true },
+    designation: { type: String, trim: true },
+    mobileNo: { type: String, trim: true },
+    email: { type: String, trim: true },
+  },
+  { _id: true }
+);
+
+// Sub-schema for address block (Enhancement 4 - reused for company + factory)
+const addressSchema = new mongoose.Schema(
+  {
+    areaEstate: String,
+    address: String,
+    district: String,
+    state: String,
+    pincode: String,
+    city: String,
+  },
+  { _id: false }
+);
+
 const leadSchema = new mongoose.Schema(
   {
     // 1. SR.NO - Auto-incremented
@@ -31,7 +55,16 @@ const leadSchema = new mongoose.Schema(
       required: true,
     },
 
-    // 7. PERSON NAME
+    // ── ENHANCEMENT 5: Business Group ─────────────────────────────────────
+    // Tag multiple companies under one group (e.g. "Sharma Group")
+    groupName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    // ── ENHANCEMENT 3: Primary contact (kept for backward compat) ──────────
+    // 7. PERSON NAME (primary contact — also reflected in contacts[0])
     personName: {
       type: String,
       trim: true,
@@ -57,6 +90,15 @@ const leadSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // ENHANCEMENT 3: Additional contacts array
+    // contacts[0] mirrors personName/designation/mobileNo/email above
+    // contacts[1..n] are extra contacts
+    additionalContacts: {
+      type: [contactSchema],
+      default: [],
+    },
+
+    // ── ENHANCEMENT 4: Company (Office) Address ────────────────────────────
     // 11. Area estate
     areaEstate: String,
 
@@ -71,6 +113,15 @@ const leadSchema = new mongoose.Schema(
 
     // 15. pincode
     pincode: String,
+
+    // 15b. city (Enhancement 1 - location filter)
+    city: String,
+
+    // ENHANCEMENT 4: Factory Address (separate block)
+    factoryAddress: {
+      type: addressSchema,
+      default: () => ({}),
+    },
 
     // 16. INDUSTRY
     industry: String,
@@ -87,7 +138,8 @@ const leadSchema = new mongoose.Schema(
     // 20. REMARK
     remark: String,
 
-    // 21. bank name
+    // ── ENHANCEMENT 2: Banking only visible when sanctioned ────────────────
+    // 21. bank name (only shown/used when sanction = true)
     bankName: String,
 
     // 22. VISIT - OFFICE/MEETING
@@ -96,22 +148,22 @@ const leadSchema = new mongoose.Schema(
       enum: ["office", "meeting"],
     },
 
-    // 23. sanction (yes/no)
+    // 23. sanction (yes/no) — GATE for banking details
     sanction: {
       type: Boolean,
       default: false,
     },
 
-    // 24. date (sanction date)
+    // 24. date (sanction date) — only relevant when sanction = true
     sanctionDate: Date,
 
-    // 25. amount
+    // 25. amount — only relevant when sanction = true
     amount: {
       type: Number,
       default: 0,
     },
 
-    // 26. meeting (yes/no) - This seems duplicate with visitType, keeping as boolean
+    // 26. meeting (yes/no)
     meetingScheduled: Boolean,
 
     // 27. date (meeting date)
@@ -135,9 +187,13 @@ const leadSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Indexes for fast queries
+// ── Indexes ──────────────────────────────────────────────────────────────────
 leadSchema.index({ assignedTo: 1 });
 leadSchema.index({ firmName: 1 });
-// leadSchema.index({ srNo: 1 });
+leadSchema.index({ groupName: 1 });           // Enhancement 5: fast group queries
+leadSchema.index({ district: 1 });            // Enhancement 1: location filter
+leadSchema.index({ state: 1 });               // Enhancement 1: location filter
+leadSchema.index({ city: 1 });                // Enhancement 1: location filter
+leadSchema.index({ areaEstate: 1 });          // Enhancement 1: location filter
 
 module.exports = mongoose.model("Lead", leadSchema);

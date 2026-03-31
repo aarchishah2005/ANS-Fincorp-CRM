@@ -1,49 +1,50 @@
+// store/useUIStore.js  ← REPLACE your existing file with this
 import { create } from "zustand";
 
+// ── Default lead filters ──────────────────────────────────────────────────
+// Used by both admin (AllLeads) and sales (MyLeads) pages
+const defaultLeadFilters = {
+  search:      "",
+  projectType: "",
+  sanction:    "",
+  bankName:    "",
+  // Enhancement 1: location filters
+  state:       "",
+  district:    "",
+  city:        "",
+  areaEstate:  "",
+  // Enhancement 5: business group filter
+  groupName:   "",
+};
+
 const useUIStore = create((set) => ({
+
+  // ── Toast notifications ────────────────────────────────────────────────
   toast: null,
   showToast: (message, type = "success") => {
     set({ toast: { message, type } });
     setTimeout(() => set({ toast: null }), 3000);
   },
+  clearToast: () => set({ toast: null }),
 
-  confirmModal: null,
-  showConfirm: (message, onConfirm) =>
-    set({ confirmModal: { message, onConfirm } }),
-  hideConfirm: () => set({ confirmModal: null }),
-
-  sidebarOpen: true,
-  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-
-  selectedLead: null,
-  setSelectedLead: (lead) => set({ selectedLead: lead }),
-  clearSelectedLead: () => set({ selectedLead: null }),
-
-  leadFilters: {
-    search: "",
-    projectType: "",
-    ansClientType: "",
-    visitType: "",
-    sanction: "",
-    industry: "",
-    district: "",
-    bankName: "", // ADDED FOR BANK FILTER
+  // ── Confirm dialog ─────────────────────────────────────────────────────
+  confirm: null,
+  showConfirm: (message, onConfirm) => {
+    set({ confirm: { message, onConfirm } });
   },
-  setLeadFilters: (filters) =>
-    set((state) => ({ leadFilters: { ...state.leadFilters, ...filters } })),
+  clearConfirm: () => set({ confirm: null }),
+
+  // ── Lead filters (shared between admin AllLeads & sales MyLeads) ───────
+  leadFilters: { ...defaultLeadFilters },
+
+  setLeadFilters: (partial) =>
+    set((state) => ({
+      leadFilters: { ...state.leadFilters, ...partial },
+    })),
+
   resetLeadFilters: () =>
-    set({
-      leadFilters: {
-        search: "",
-        projectType: "",
-        ansClientType: "",
-        visitType: "",
-        sanction: "",
-        industry: "",
-        district: "",
-        bankName: "",
-      },
-    }),
+    set({ leadFilters: { ...defaultLeadFilters } }),
+
 }));
 
 export default useUIStore;
