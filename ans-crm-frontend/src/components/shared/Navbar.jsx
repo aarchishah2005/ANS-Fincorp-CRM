@@ -1,6 +1,7 @@
 import useAuth from "../../hooks/useAuth";
 import useUIStore from "../../store/useUIStore";
 import { logout } from "../../api/auth";
+import logo from "../../assets/logo.png";
 import "./Navbar.css";
 
 const Navbar = () => {
@@ -20,10 +21,13 @@ const Navbar = () => {
         ☰
       </button>
 
-      <div className="navbar__brand">
+      {/* <div className="navbar__brand">
         <span className="navbar__brand-text">ANS CRM</span>
         <span className="navbar__brand-dot">●</span>
-      </div>
+      </div> */}
+      <div className="navbar__brand">
+  <img src={logo} alt="ANS CRM Logo" className="navbar__logo" />
+</div>
 
       <div className="navbar__right">
         <div className="navbar__user">
