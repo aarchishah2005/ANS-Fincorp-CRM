@@ -5,12 +5,14 @@ const { role }    = require("../middleware/role.middleware");
 const {
   getSalespersons,
   addSalesperson,
+  getAllUsers,
   updateSalesperson,
   deleteSalesperson,
 } = require("../controllers/user.controller");
 
 router.get("/",      protect, role("admin"), getSalespersons);
 router.post("/",     protect, role("admin"), addSalesperson);
+router.get("/all", protect, role("admin"), getAllUsers);
 router.patch("/:id", protect, role("admin"), updateSalesperson);
 router.delete("/:id",protect, role("admin"), deleteSalesperson);
 

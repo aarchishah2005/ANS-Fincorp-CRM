@@ -1,0 +1,63 @@
+/* AddressBlocks.css — import this in LeadForm.css or globally */
+
+.address-blocks-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+/* ── Single address block card ───────────────────────────────────────────── */
+.address-block {
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 20px 8px;
+  animation: fadeIn 0.2s ease;
+}
+
+.address-block__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+}
+
+/* ── Add buttons row ─────────────────────────────────────────────────────── */
+.address-blocks__add-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.address-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: 10px;
+  padding: 8px 16px;
+  transition: all 0.15s;
+}
+
+.address-add-btn--office {
+  border: 2px solid #667eea !important;
+  color: #4338ca !important;
+}
+.address-add-btn--office:hover {
+  background: #f0f4ff !important;
+}
+
+.address-add-btn--factory {
+  border: 2px solid #f59e0b !important;
+  color: #92400e !important;
+}
+.address-add-btn--factory:hover {
+  background: #fffbeb !important;
+}

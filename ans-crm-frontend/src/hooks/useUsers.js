@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getSalespersons, addSalesperson, updateSalesperson, deleteSalesperson } from "../api/users";
+import { getSalespersons, getAllUsers, addSalesperson, updateSalesperson, deleteSalesperson } from "../api/users";
 
 export const useSalespersons = () => {
   return useQuery({
@@ -35,5 +35,12 @@ export const useDeleteSalesperson = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
+  });
+};
+
+export const useAllUsers = () => {
+  return useQuery({
+    queryKey: ["users", "all"],
+    queryFn: getAllUsers,
   });
 };

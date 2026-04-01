@@ -1,6 +1,7 @@
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 import Toast from "./Toast";
+import ConfirmDialog from "./ConfirmDialog";
 import ConfirmModal from "./ConfirmModal";
 import "./Layout.css";
 
@@ -13,6 +14,7 @@ const Layout = ({ children }) => {
         <main className="layout__main">{children}</main>
       </div>
       <Toast />
+      <ConfirmDialog />
       <ConfirmModal />
     </div>
   );

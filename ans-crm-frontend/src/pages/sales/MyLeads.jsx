@@ -6,19 +6,19 @@ import { useLeads } from "../../hooks/useLeads";
 import useUIStore from "../../store/useUIStore";
 import SalesLeadEditModal from "../../components/sales/SalesLeadEditModal";
 import LeadDetailModal from "../../components/shared/LeadDetailModal";
+import BankSelectorModal from "../../components/admin/BankSelectorModal";
 import "./MyLeads.css";
 
 const MyLeads = () => {
   const navigate = useNavigate();
   const { leadFilters, setLeadFilters, resetLeadFilters } = useUIStore();
-  const [editingLead, setEditingLead] = useState(null);
-  const [viewingLead, setViewingLead] = useState(null);
+  const [editingLead, setEditingLead]     = useState(null);
+  const [viewingLead, setViewingLead]     = useState(null);
+  const [showBankSelector, setShowBankSelector] = useState(false);
   const [showLocationFilters, setShowLocationFilters] = useState(false);
 
-  // Fetch ALL my leads (no filters) for building dropdown options
   const { data: allLeads } = useLeads({});
 
-  // Enhancement 1: Build location options from actual data
   const locationOptions = useMemo(() => {
     if (!allLeads) return { states: [], districts: [], cities: [], areas: [] };
     return {
@@ -29,7 +29,6 @@ const MyLeads = () => {
     };
   }, [allLeads]);
 
-  // Enhancement 5: Group options from actual data
   const groupOptions = useMemo(() => {
     if (!allLeads) return [];
     return Array.from(new Set(allLeads.map((l) => l.groupName).filter(Boolean))).sort();
@@ -38,17 +37,17 @@ const MyLeads = () => {
   const activeFilters = Object.fromEntries(
     Object.entries(leadFilters).filter(([, v]) => v !== "")
   );
-
   const { data: leads, isLoading } = useLeads(activeFilters);
 
-  // Count active location + group filters for badge
   const locationFilterCount = [
-    leadFilters.state,
-    leadFilters.district,
-    leadFilters.city,
-    leadFilters.areaEstate,
-    leadFilters.groupName,
+    leadFilters.state, leadFilters.district,
+    leadFilters.city, leadFilters.areaEstate, leadFilters.groupName,
   ].filter(Boolean).length;
+
+  const handleBankSelect = (bankName) => {
+    setLeadFilters({ bankName });
+    setShowBankSelector(false);
+  };
 
   return (
     <Layout>
@@ -62,7 +61,7 @@ const MyLeads = () => {
         </button>
       </div>
 
-      {/* ── MAIN FILTER BAR ──────────────────────────────────────────── */}
+      {/* ── FILTER BAR ───────────────────────────────────────────────── */}
       <div className="my-leads__filters card">
         <input
           className="form-input"
@@ -71,16 +70,16 @@ const MyLeads = () => {
           value={leadFilters.search || ""}
           onChange={(e) => setLeadFilters({ search: e.target.value })}
         />
-        <select
-          className="form-select"
+
+        <select className="form-select"
           value={leadFilters.projectType || ""}
           onChange={(e) => setLeadFilters({ projectType: e.target.value })}>
           <option value="">All Project Types</option>
           <option value="loan">Loan</option>
           <option value="subsidy">Subsidy</option>
         </select>
-        <select
-          className="form-select"
+
+        <select className="form-select"
           value={leadFilters.sanction || ""}
           onChange={(e) => setLeadFilters({ sanction: e.target.value })}>
           <option value="">All Sanctions</option>
@@ -88,7 +87,13 @@ const MyLeads = () => {
           <option value="false">Not Sanctioned</option>
         </select>
 
-        {/* Enhancement 1 + 5: Location & Group toggle */}
+        {/* Bank selector button — same style as admin */}
+        <button
+          className="btn btn--outline my-leads__bank-btn"
+          onClick={() => setShowBankSelector(true)}>
+          🏦 {leadFilters.bankName || "Select Bank"}
+        </button>
+
         <button
           className={`btn ${locationFilterCount > 0 ? "btn--primary" : "btn--outline"} my-leads__location-btn`}
           onClick={() => setShowLocationFilters((p) => !p)}>
@@ -98,113 +103,63 @@ const MyLeads = () => {
           )}
         </button>
 
-        <button className="btn btn--ghost" onClick={resetLeadFilters}>
-          Reset
-        </button>
+        <button className="btn btn--ghost" onClick={resetLeadFilters}>Reset</button>
       </div>
 
-      {/* Enhancement 1 + 5: Expandable location & group filters */}
+      {/* ── LOCATION & GROUP PANEL ───────────────────────────────────── */}
       {showLocationFilters && (
         <div className="my-leads__location-filters card">
           <div className="my-leads__location-title">📍 Filter by Location & Group</div>
           <div className="my-leads__location-grid">
-
             <div className="form-group">
               <label className="form-label">State</label>
-              <select className="form-select"
-                value={leadFilters.state || ""}
+              <select className="form-select" value={leadFilters.state || ""}
                 onChange={(e) => setLeadFilters({ state: e.target.value })}>
                 <option value="">All States</option>
-                {locationOptions.states.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
+                {locationOptions.states.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-
             <div className="form-group">
               <label className="form-label">District</label>
-              <select className="form-select"
-                value={leadFilters.district || ""}
+              <select className="form-select" value={leadFilters.district || ""}
                 onChange={(e) => setLeadFilters({ district: e.target.value })}>
                 <option value="">All Districts</option>
-                {locationOptions.districts.map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
+                {locationOptions.districts.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
-
             <div className="form-group">
               <label className="form-label">City</label>
-              <select className="form-select"
-                value={leadFilters.city || ""}
+              <select className="form-select" value={leadFilters.city || ""}
                 onChange={(e) => setLeadFilters({ city: e.target.value })}>
                 <option value="">All Cities</option>
-                {locationOptions.cities.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
+                {locationOptions.cities.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-
             <div className="form-group">
               <label className="form-label">Area / Estate</label>
-              <select className="form-select"
-                value={leadFilters.areaEstate || ""}
+              <select className="form-select" value={leadFilters.areaEstate || ""}
                 onChange={(e) => setLeadFilters({ areaEstate: e.target.value })}>
                 <option value="">All Areas</option>
-                {locationOptions.areas.map((a) => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
+                {locationOptions.areas.map((a) => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
-
-            {/* Enhancement 5: Group filter */}
             <div className="form-group">
               <label className="form-label">Business Group</label>
-              <select className="form-select"
-                value={leadFilters.groupName || ""}
+              <select className="form-select" value={leadFilters.groupName || ""}
                 onChange={(e) => setLeadFilters({ groupName: e.target.value })}>
                 <option value="">All Groups</option>
-                {groupOptions.map((g) => (
-                  <option key={g} value={g}>{g}</option>
-                ))}
+                {groupOptions.map((g) => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
-
           </div>
 
-          {/* Active filter chips */}
           {locationFilterCount > 0 && (
             <div className="my-leads__filter-chips">
-              {leadFilters.state && (
-                <span className="my-leads__chip">
-                  State: {leadFilters.state}
-                  <button onClick={() => setLeadFilters({ state: "" })}>✕</button>
-                </span>
-              )}
-              {leadFilters.district && (
-                <span className="my-leads__chip">
-                  District: {leadFilters.district}
-                  <button onClick={() => setLeadFilters({ district: "" })}>✕</button>
-                </span>
-              )}
-              {leadFilters.city && (
-                <span className="my-leads__chip">
-                  City: {leadFilters.city}
-                  <button onClick={() => setLeadFilters({ city: "" })}>✕</button>
-                </span>
-              )}
-              {leadFilters.areaEstate && (
-                <span className="my-leads__chip">
-                  Area: {leadFilters.areaEstate}
-                  <button onClick={() => setLeadFilters({ areaEstate: "" })}>✕</button>
-                </span>
-              )}
-              {leadFilters.groupName && (
-                <span className="my-leads__chip my-leads__chip--group">
-                  🔗 Group: {leadFilters.groupName}
-                  <button onClick={() => setLeadFilters({ groupName: "" })}>✕</button>
-                </span>
-              )}
+              {leadFilters.state     && <span className="my-leads__chip">State: {leadFilters.state}<button onClick={() => setLeadFilters({ state: "" })}>✕</button></span>}
+              {leadFilters.district  && <span className="my-leads__chip">District: {leadFilters.district}<button onClick={() => setLeadFilters({ district: "" })}>✕</button></span>}
+              {leadFilters.city      && <span className="my-leads__chip">City: {leadFilters.city}<button onClick={() => setLeadFilters({ city: "" })}>✕</button></span>}
+              {leadFilters.areaEstate && <span className="my-leads__chip">Area: {leadFilters.areaEstate}<button onClick={() => setLeadFilters({ areaEstate: "" })}>✕</button></span>}
+              {leadFilters.groupName && <span className="my-leads__chip my-leads__chip--group">🔗 {leadFilters.groupName}<button onClick={() => setLeadFilters({ groupName: "" })}>✕</button></span>}
             </div>
           )}
         </div>
@@ -241,49 +196,27 @@ const MyLeads = () => {
                 <tr key={lead._id}>
                   <td className="my-leads-table__srno">{lead.srNo}</td>
                   <td>
-                    <button
-                      className="my-leads-table__firm-btn"
-                      onClick={() => setViewingLead(lead)}>
+                    <button className="my-leads-table__firm-btn" onClick={() => setViewingLead(lead)}>
                       {lead.firmName || "—"}
                     </button>
                   </td>
-                  {/* Enhancement 5: group tag */}
                   <td>
-                    {lead.groupName ? (
-                      <button
-                        className="my-leads__group-tag"
-                        title={`Filter by ${lead.groupName}`}
-                        onClick={() => setLeadFilters({ groupName: lead.groupName })}>
-                        🔗 {lead.groupName}
-                      </button>
-                    ) : (
-                      <span style={{ color: "#cbd5e0" }}>—</span>
-                    )}
+                    {lead.groupName
+                      ? <button className="my-leads__group-tag" onClick={() => setLeadFilters({ groupName: lead.groupName })}>🔗 {lead.groupName}</button>
+                      : <span style={{ color: "#cbd5e0" }}>—</span>}
                   </td>
                   <td>{lead.personName || "—"}</td>
-                  <td>{lead.mobileNo || "—"}</td>
-                  {/* Enhancement 1: Location column */}
+                  <td>{lead.mobileNo   || "—"}</td>
                   <td className="my-leads-table__location">
                     {[lead.city, lead.district].filter(Boolean).join(", ") || "—"}
                   </td>
-                  <td>
-                    <span className={`badge badge--${lead.projectType}`}>
-                      {lead.projectType || "—"}
-                    </span>
-                  </td>
-                  <td className="my-leads-table__sanction">
-                    {lead.sanction ? "✓" : "✗"}
-                  </td>
+                  <td><span className={`badge badge--${lead.projectType}`}>{lead.projectType || "—"}</span></td>
+                  <td className="my-leads-table__sanction">{lead.sanction ? "✓" : "✗"}</td>
                   <td className="my-leads-table__amount">
-                    {lead.sanction && lead.amount
-                      ? `₹${lead.amount.toLocaleString()}`
-                      : "—"}
+                    {lead.sanction && lead.amount ? `₹${lead.amount.toLocaleString()}` : "—"}
                   </td>
                   <td>
-                    <button className="btn btn--ghost btn--sm"
-                      onClick={() => setEditingLead(lead)}>
-                      Edit
-                    </button>
+                    <button className="btn btn--ghost btn--sm" onClick={() => setEditingLead(lead)}>Edit</button>
                   </td>
                 </tr>
               ))}
@@ -293,21 +226,23 @@ const MyLeads = () => {
       )}
 
       {/* ── MODALS ───────────────────────────────────────────────────── */}
-      {editingLead && (
-        <SalesLeadEditModal
-          lead={editingLead}
-          onClose={() => setEditingLead(null)}
-        />
-      )}
+      {editingLead && <SalesLeadEditModal lead={editingLead} onClose={() => setEditingLead(null)} />}
 
       {viewingLead && (
         <LeadDetailModal
           lead={viewingLead}
           onClose={() => setViewingLead(null)}
-          onEdit={() => {
-            setEditingLead(viewingLead);
-            setViewingLead(null);
-          }}
+          onEdit={() => { setEditingLead(viewingLead); setViewingLead(null); }}
+        />
+      )}
+
+      {/* Bank selector modal — same component as admin */}
+      {showBankSelector && (
+        <BankSelectorModal
+          leads={leads}
+          currentBank={leadFilters.bankName}
+          onSelect={handleBankSelect}
+          onClose={() => setShowBankSelector(false)}
         />
       )}
     </Layout>

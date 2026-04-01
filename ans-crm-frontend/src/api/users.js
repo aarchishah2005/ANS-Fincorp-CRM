@@ -5,6 +5,9 @@ export const getSalespersons = async () => {
   return response.data;
 };
 
+export const getAllUsers = () => api.get("/users/all").then(r => r.data);
+// adjust the endpoint to match your backend route that returns all users (sales + admin)
+
 export const addSalesperson = async (data) => {
   const response = await api.post("/users", data);
   return response.data;

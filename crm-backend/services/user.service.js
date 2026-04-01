@@ -52,9 +52,18 @@ const deleteSalesperson = async (userId) => {
   return { message: "Salesperson removed successfully." };
 };
 
+const getAllUsers = async () => {
+  const users = await User.find({ role: { $in: ["sales", "admin"] } })
+    .select("-password")
+    .sort({ name: 1 });
+  return users;
+};
+
+
 module.exports = {
   getSalespersons,
   addSalesperson,
+  getAllUsers,
   updateSalesperson,
   deleteSalesperson,
 };

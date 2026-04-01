@@ -1,4 +1,4 @@
-/* ── Main filter bar ─────────────────────────────────────────────────────── */
+/* ── Filter bar ──────────────────────────────────────────────────────────── */
 .my-leads__filters {
   display: flex;
   gap: 12px;
@@ -8,7 +8,47 @@
   padding: 20px;
 }
 
-/* ── Location & Group filter panel (Enhancement 1 + 5) ──────────────────── */
+/* Bank button — mirrors admin's .all-leads__bank-btn */
+.my-leads__bank-btn {
+  min-width: 160px;
+  justify-content: flex-start;
+  border: 2px solid #10b981 !important;
+  color: #065f46 !important;
+}
+.my-leads__bank-btn:hover {
+  background: #f0fdf4 !important;
+}
+
+/* Location button */
+.my-leads__location-btn {
+  min-width: 160px;
+  justify-content: flex-start;
+}
+
+.btn--outline {
+  background: #fff;
+  border: 2px solid #10b981;
+  color: #10b981;
+  font-weight: 600;
+}
+.btn--outline:hover { background: #f0fdf4; }
+
+/* Filter badge */
+.my-leads__filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: #10b981;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+/* ── Location & Group panel ──────────────────────────────────────────────── */
 .my-leads__location-filters {
   padding: 20px 24px;
   margin-bottom: 20px;
@@ -33,15 +73,10 @@
   grid-template-columns: repeat(5, 1fr);
   gap: 16px;
 }
+@media (max-width: 1100px) { .my-leads__location-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px)  { .my-leads__location-grid { grid-template-columns: 1fr 1fr; } }
 
-@media (max-width: 1100px) {
-  .my-leads__location-grid { grid-template-columns: repeat(3, 1fr); }
-}
-@media (max-width: 700px) {
-  .my-leads__location-grid { grid-template-columns: 1fr 1fr; }
-}
-
-/* ── Active filter chips ─────────────────────────────────────────────────── */
+/* ── Filter chips ────────────────────────────────────────────────────────── */
 .my-leads__filter-chips {
   display: flex;
   flex-wrap: wrap;
@@ -63,56 +98,11 @@
   padding: 4px 10px;
   border-radius: 20px;
 }
-
-.my-leads__chip button {
-  background: none;
-  border: none;
-  color: #059669;
-  cursor: pointer;
-  font-size: 12px;
-  padding: 0;
-}
-
-.my-leads__chip--group {
-  background: #fdf4ff;
-  border-color: #e9d5ff;
-  color: #7c3aed;
-}
-
+.my-leads__chip button { background: none; border: none; color: #059669; cursor: pointer; font-size: 12px; padding: 0; }
+.my-leads__chip--group { background: #fdf4ff; border-color: #e9d5ff; color: #7c3aed; }
 .my-leads__chip--group button { color: #7c3aed; }
 
-/* Badge on location button */
-.my-leads__filter-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #fff;
-  color: #10b981;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  font-size: 11px;
-  font-weight: 700;
-  margin-left: 4px;
-}
-
-/* Location / Group filter button */
-.my-leads__location-btn {
-  min-width: 160px;
-  justify-content: flex-start;
-}
-
-.btn--outline {
-  background: #fff;
-  border: 2px solid #10b981;
-  color: #10b981;
-  font-weight: 600;
-}
-.btn--outline:hover {
-  background: #f0fdf4;
-}
-
-/* ── Group tag in table (Enhancement 5) ──────────────────────────────────── */
+/* ── Group tag in table ──────────────────────────────────────────────────── */
 .my-leads__group-tag {
   background: #fdf4ff;
   border: 1px solid #e9d5ff;
@@ -125,78 +115,17 @@
   white-space: nowrap;
   transition: all 0.15s;
 }
+.my-leads__group-tag:hover { background: #ede9fe; border-color: #c4b5fd; }
 
-.my-leads__group-tag:hover {
-  background: #ede9fe;
-  border-color: #c4b5fd;
-}
-
-/* ── Location column ──────────────────────────────────────────────────────── */
-.my-leads-table__location {
-  font-size: 13px;
-  color: #718096 !important;
-  white-space: nowrap;
-}
-
-/* ── Table styles (kept from original + additions) ──────────────────────── */
-.my-leads-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-.my-leads-table thead {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: #fff;
-}
-
-.my-leads-table th {
-  padding: 14px 16px;
-  text-align: left;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-}
-
-.my-leads-table td {
-  padding: 16px;
-  border-bottom: 1px solid #f3f4f6;
-  color: #4a5568;
-  vertical-align: middle;
-}
-
-.my-leads-table tbody tr:hover td {
-  background: #f7fafc;
-}
-
-.my-leads-table__srno {
-  font-weight: 700;
-  color: #10b981 !important;
-}
-
-.my-leads-table__firm-btn {
-  background: none;
-  border: none;
-  color: #10b981;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: underline;
-  padding: 0;
-  text-align: left;
-}
-
+/* ── Table ───────────────────────────────────────────────────────────────── */
+.my-leads-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.my-leads-table thead { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; }
+.my-leads-table th { padding: 14px 16px; text-align: left; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+.my-leads-table td { padding: 16px; border-bottom: 1px solid #f3f4f6; color: #4a5568; vertical-align: middle; }
+.my-leads-table tbody tr:hover td { background: #f7fafc; }
+.my-leads-table__srno { font-weight: 700; color: #10b981 !important; }
+.my-leads-table__firm-btn { background: none; border: none; color: #10b981; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0; text-align: left; }
 .my-leads-table__firm-btn:hover { color: #059669; }
-
-.my-leads-table__sanction {
-  font-size: 18px;
-  font-weight: 700;
-  text-align: center;
-}
-
-.my-leads-table__amount {
-  font-weight: 600;
-  color: #10b981 !important;
-}
+.my-leads-table__location { font-size: 13px; color: #718096 !important; white-space: nowrap; }
+.my-leads-table__sanction { font-size: 18px; font-weight: 700; text-align: center; }
+.my-leads-table__amount { font-weight: 600; color: #10b981 !important; }
