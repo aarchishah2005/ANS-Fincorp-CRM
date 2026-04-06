@@ -1,17 +1,36 @@
 import "./LeadDetailModal.css";
 
+const NOTE_CONFIG = {
+  callingDate:  { label: "📞 Calling Note",   color: "#667eea", bg: "#f0f4ff", border: "#c7d2fe" },
+  followUpDate: { label: "📅 Follow-up Note", color: "#f59e0b", bg: "#fffbeb", border: "#fde68a" },
+  visitDate:    { label: "🗓 Visit Note",      color: "#10b981", bg: "#f0fdf4", border: "#a7f3d0" },
+};
+
+const formatDate = (date) => {
+  if (!date) return "—";
+  return new Date(date).toLocaleDateString("en-IN");
+};
+
+const formatDateTime = (date) => {
+  if (!date) return "—";
+  return new Date(date).toLocaleString("en-IN", {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+};
+
 const LeadDetailModal = ({ lead, onClose, onEdit }) => {
   if (!lead) return null;
 
-  const formatDate = (date) => {
-    if (!date) return "—";
-    return new Date(date).toLocaleDateString("en-IN");
-  };
+  const fieldOrder  = ["callingDate", "followUpDate", "visitDate"];
+  const sortedNotes = [...(lead.notes || [])].sort(
+    (a, b) => fieldOrder.indexOf(a.field) - fieldOrder.indexOf(b.field)
+  );
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="lead-detail-modal" onClick={(e) => e.stopPropagation()}>
-        
+
         {/* HEADER */}
         <div className="lead-detail-modal__header">
           <div>
@@ -22,7 +41,7 @@ const LeadDetailModal = ({ lead, onClose, onEdit }) => {
         </div>
 
         <div className="lead-detail-modal__body">
-          
+
           {/* CONTACT PERSON */}
           <div className="lead-detail-section">
             <div className="lead-detail-section__title">👤 Contact Person</div>
@@ -103,9 +122,7 @@ const LeadDetailModal = ({ lead, onClose, onEdit }) => {
               <div className="lead-detail-item">
                 <div className="lead-detail-item__label">Project Type</div>
                 <div className="lead-detail-item__value">
-                  <span className={`badge badge--${lead.projectType}`}>
-                    {lead.projectType || "—"}
-                  </span>
+                  <span className={`badge badge--${lead.projectType}`}>{lead.projectType || "—"}</span>
                 </div>
               </div>
               <div className="lead-detail-item">
@@ -115,17 +132,13 @@ const LeadDetailModal = ({ lead, onClose, onEdit }) => {
               <div className="lead-detail-item">
                 <div className="lead-detail-item__label">Client Type</div>
                 <div className="lead-detail-item__value">
-                  <span className={`badge badge--${lead.ansClientType}`}>
-                    {lead.ansClientType || "—"}
-                  </span>
+                  <span className={`badge badge--${lead.ansClientType}`}>{lead.ansClientType || "—"}</span>
                 </div>
               </div>
               <div className="lead-detail-item">
                 <div className="lead-detail-item__label">Visit Type</div>
                 <div className="lead-detail-item__value">
-                  <span className={`badge badge--${lead.visitType}`}>
-                    {lead.visitType || "—"}
-                  </span>
+                  <span className={`badge badge--${lead.visitType}`}>{lead.visitType || "—"}</span>
                 </div>
               </div>
             </div>
@@ -142,11 +155,9 @@ const LeadDetailModal = ({ lead, onClose, onEdit }) => {
               <div className="lead-detail-item">
                 <div className="lead-detail-item__label">Sanction Status</div>
                 <div className="lead-detail-item__value">
-                  {lead.sanction ? (
-                    <span style={{ color: "#10b981", fontWeight: "600" }}>✓ Sanctioned</span>
-                  ) : (
-                    <span style={{ color: "#f59e0b", fontWeight: "600" }}>⏳ Pending</span>
-                  )}
+                  {lead.sanction
+                    ? <span style={{ color: "#10b981", fontWeight: "600" }}>✓ Sanctioned</span>
+                    : <span style={{ color: "#f59e0b", fontWeight: "600" }}>⏳ Pending</span>}
                 </div>
               </div>
               <div className="lead-detail-item">
@@ -185,7 +196,7 @@ const LeadDetailModal = ({ lead, onClose, onEdit }) => {
             </div>
           </div>
 
-          {/* ASSIGNMENT & REMARKS */}
+          {/* ADDITIONAL INFO */}
           <div className="lead-detail-section">
             <div className="lead-detail-section__title">📝 Additional Info</div>
             <div className="lead-detail-grid">
@@ -199,6 +210,48 @@ const LeadDetailModal = ({ lead, onClose, onEdit }) => {
               </div>
             </div>
           </div>
+
+          {/* ── ACTIVITY LOG (NEW) ────────────────────────────────────── */}
+          {sortedNotes.length > 0 && (
+            <div className="lead-detail-section lead-detail-section--activity">
+              <div className="lead-detail-section__title">
+                🗒 Activity Log
+                <span className="activity-log__count">
+                  {sortedNotes.length} note{sortedNotes.length > 1 ? "s" : ""}
+                </span>
+              </div>
+
+              <div className="activity-log">
+                {sortedNotes.map((note) => {
+                  const cfg = NOTE_CONFIG[note.field] || NOTE_CONFIG.followUpDate;
+                  return (
+                    <div
+                      key={note._id}
+                      className="activity-log__item"
+                      style={{ borderLeftColor: cfg.color }}
+                    >
+                      <div
+                        className="activity-log__type"
+                        style={{ color: cfg.color, background: cfg.bg, border: `1px solid ${cfg.border}` }}
+                      >
+                        {cfg.label}
+                      </div>
+                      <div className="activity-log__message">{note.message}</div>
+                      <div className="activity-log__meta">
+                        <span className="activity-log__by">
+                          👤 {note.addedBy?.name || "Sales Person"}
+                        </span>
+                        <span className="activity-log__dot">·</span>
+                        <span className="activity-log__at">
+                          🕐 {formatDateTime(note.addedAt)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
         </div>
 

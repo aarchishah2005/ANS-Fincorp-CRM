@@ -112,3 +112,85 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Activity section wrapper ────────────────────────────────────────────── */
+.lead-detail-section--activity {
+  background: #fafafa;
+  border-radius: 14px;
+  padding: 20px;
+  border: 2px solid #f3f4f6;
+}
+
+/* Count badge next to "Activity Log" title */
+.activity-log__count {
+  display: inline-block;
+  background: #f3f4f6;
+  color: #718096;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* ── Activity log list ───────────────────────────────────────────────────── */
+.activity-log {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+/* ── Single note card ────────────────────────────────────────────────────── */
+.activity-log__item {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #667eea; /* overridden inline per type */
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: box-shadow 0.15s;
+}
+
+.activity-log__item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Type pill */
+.activity-log__type {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  width: fit-content;
+}
+
+/* Message text */
+.activity-log__message {
+  font-size: 14px;
+  color: #1a202c;
+  line-height: 1.55;
+  white-space: pre-wrap;   /* preserves line breaks the user typed */
+}
+
+/* Meta row: who + when */
+.activity-log__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #a0aec0;
+  flex-wrap: wrap;
+}
+
+.activity-log__by  { font-weight: 600; color: #718096; }
+.activity-log__dot { color: #cbd5e0; }
+.activity-log__at  { color: #a0aec0; }

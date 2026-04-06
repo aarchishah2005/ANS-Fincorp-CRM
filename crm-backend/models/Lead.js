@@ -11,16 +11,42 @@ const contactSchema = new mongoose.Schema(
   { _id: true }
 );
 
-// ── Address sub-schema (reused for office + factory) ─────────────────────
+// ── Address sub-schema ────────────────────────────────────────────────────
 const addressSchema = new mongoose.Schema(
   {
-    label:      String,   // e.g. "Head Office", "Unit 2", "Plant A"
+    label:      String,
     areaEstate: String,
     address:    String,
     city:       String,
     district:   String,
     state:      String,
     pincode:    String,
+  },
+  { _id: true }
+);
+
+// ── Note sub-schema (NEW) ─────────────────────────────────────────────────
+// One note per reminder field. Saved when user ticks a reminder + submits message.
+const noteSchema = new mongoose.Schema(
+  {
+    field: {
+      type:     String,
+      enum:     ["callingDate", "followUpDate", "visitDate"],
+      required: true,
+    },
+    message: {
+      type:     String,
+      trim:     true,
+      required: true,
+    },
+    addedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref:  "User",
+    },
+    addedAt: {
+      type:    Date,
+      default: Date.now,
+    },
   },
   { _id: true }
 );
@@ -42,16 +68,13 @@ const leadSchema = new mongoose.Schema(
     firmName:  { type: String, trim: true, required: true },
     groupName: { type: String, trim: true, default: "" },
 
-    // Primary contact (required, kept flat for backward compat)
     personName:  { type: String, trim: true, required: true },
     designation: { type: String, trim: true },
     mobileNo:    { type: String, trim: true, required: true },
     email:       { type: String, trim: true },
 
-    // Additional contacts array
     additionalContacts: { type: [contactSchema], default: [] },
 
-    // ── OLD flat address fields (kept for backward compat) ────────────────
     areaEstate: String,
     address:    String,
     city:       String,
@@ -59,20 +82,15 @@ const leadSchema = new mongoose.Schema(
     state:      String,
     pincode:    String,
 
-    // ── NEW: Multiple office addresses ────────────────────────────────────
     officeAddresses:  { type: [addressSchema], default: [] },
-
-    // ── NEW: Multiple factory/plant addresses ─────────────────────────────
     factoryAddresses: { type: [addressSchema], default: [] },
 
-    // Business
     industry:     String,
     segment:      String,
     constitution: String,
     machine:      String,
     remark:       String,
 
-    // Banking (gated by sanction)
     bankName:  String,
     visitType: { type: String, enum: ["office", "meeting"] },
 
@@ -86,6 +104,9 @@ const leadSchema = new mongoose.Schema(
     projectType:   { type: String, enum: ["loan", "subsidy"] },
     projectStatus: String,
     ansClientType: { type: String, enum: ["ans_client", "other"] },
+
+    // ── Activity notes — one per reminder field ───────────────────────────
+    notes: { type: [noteSchema], default: [] },
   },
   { timestamps: true }
 );

@@ -1,11 +1,12 @@
-// components/shared/NotificationPanel.jsx  ← REPLACE existing file
+// components/shared/NotificationPanel.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useNotifications, useToggleDone } from "../../hooks/useNotifications";
+import { useAddLeadNote } from "../../hooks/useLeads";
 import useAuth from "../../hooks/useAuth";
 import "./NotificationPanel.css";
 
-// ── Icons ────────────────────────────────────────────────────
+// ── Icons ─────────────────────────────────────────────────────────────────
 const PhoneIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.21 2 2 0 012.06 0h3a2 2 0 012 1.72c.13 1 .37 1.97.72 2.9a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.18-1.18a2 2 0 012.11-.45c.93.35 1.9.59 2.9.72A2 2 0 0122 14.92z"/>
@@ -31,9 +32,9 @@ const CheckIcon = () => (
 );
 
 const TYPE_CONFIG = {
-  "Calling":   { icon: <PhoneIcon />,    color: "calling",  label: "Calling" },
-  "Follow-Up": { icon: <CalendarIcon />, color: "followup", label: "Follow-Up" },
-  "Visit":     { icon: <VisitIcon />,    color: "visit",    label: "Visit" },
+  "Calling":   { icon: <PhoneIcon />,    color: "calling",  label: "Calling",   field: "callingDate"  },
+  "Follow-Up": { icon: <CalendarIcon />, color: "followup", label: "Follow-Up", field: "followUpDate" },
+  "Visit":     { icon: <VisitIcon />,    color: "visit",    label: "Visit",     field: "visitDate"    },
 };
 
 const formatDate = (dateStr) =>
@@ -41,13 +42,68 @@ const formatDate = (dateStr) =>
     day: "2-digit", month: "short", year: "numeric",
   });
 
-// ── Single notification card ─────────────────────────────────
-const NotifCard = ({ notif, isAdmin, onNavigate, onToggle, isToggling }) => {
+// ── Single notification card ──────────────────────────────────────────────
+const NotifCard = ({ notif, isAdmin, onNavigate, onToggle, isToggling, onAddNote, isAddingNote }) => {
   const cfg = TYPE_CONFIG[notif.type] || TYPE_CONFIG["Follow-Up"];
 
+  // Local state for message box
+  const [showMsgBox, setShowMsgBox] = useState(false);
+  const [message,    setMessage]    = useState("");
+  const [msgError,   setMsgError]   = useState("");
+
   const handleTickClick = (e) => {
-    e.stopPropagation(); // don't navigate when ticking
-    onToggle({ leadId: notif.leadId, field: notif.field });
+    e.stopPropagation();
+
+    if (notif.isDone) {
+      // Already done — untick (existing behaviour)
+      onToggle({ leadId: notif.leadId, field: notif.field });
+      return;
+    }
+
+    // Not done — open the message box instead of immediately marking done
+    setShowMsgBox(true);
+    setMessage("");
+    setMsgError("");
+  };
+
+  const handleCancel = (e) => {
+    e.stopPropagation();
+    setShowMsgBox(false);
+    setMessage("");
+    setMsgError("");
+  };
+
+  const handleSubmit = async (e) => {
+    e.stopPropagation();
+
+    // Validate message
+    if (!message.trim()) {
+      setMsgError("Please add a message before submitting.");
+      return;
+    }
+
+    // 1. Save the note
+    onAddNote(
+      { id: notif.leadId, field: notif.field, message: message.trim() },
+      {
+        onSuccess: () => {
+          // 2. Only after note saved → mark as done
+          onToggle({ leadId: notif.leadId, field: notif.field });
+          setShowMsgBox(false);
+          setMessage("");
+          setMsgError("");
+        },
+        onError: (err) => {
+          // If note already exists (409), just mark done anyway
+          if (err?.response?.status === 409) {
+            onToggle({ leadId: notif.leadId, field: notif.field });
+            setShowMsgBox(false);
+          } else {
+            setMsgError("Failed to save note. Please try again.");
+          }
+        },
+      }
+    );
   };
 
   return (
@@ -58,80 +114,117 @@ const NotifCard = ({ notif, isAdmin, onNavigate, onToggle, isToggling }) => {
         `notif-card--${notif.when}`,
         notif.isDone ? "notif-card--done" : "",
       ].join(" ")}
-      onClick={() => !notif.isDone && onNavigate(notif)}
+      onClick={() => !notif.isDone && !showMsgBox && onNavigate(notif)}
       title={notif.isDone ? "Marked as done" : "Click to view lead"}
     >
-      {/* Tick button */}
-      <button
-        className={`notif-card__tick ${notif.isDone ? "notif-card__tick--done" : ""}`}
-        onClick={handleTickClick}
-        disabled={isToggling}
-        title={notif.isDone ? "Mark as pending" : "Mark as done"}
-      >
-        {notif.isDone ? <CheckIcon /> : null}
-      </button>
+      <div className="notif-card__main-row">
+        {/* Tick button */}
+        <button
+          className={`notif-card__tick ${notif.isDone ? "notif-card__tick--done" : ""}`}
+          onClick={handleTickClick}
+          disabled={isToggling || isAddingNote}
+          title={notif.isDone ? "Mark as pending" : "Tick to mark done"}
+        >
+          {notif.isDone ? <CheckIcon /> : null}
+        </button>
 
-      {/* Type icon */}
-      <div className={`notif-card__icon-wrap notif-card__icon-wrap--${cfg.color} ${notif.isDone ? "notif-card__icon-wrap--done" : ""}`}>
-        {cfg.icon}
-      </div>
-
-      {/* Body */}
-      <div className="notif-card__body">
-        <div className="notif-card__top">
-          <span className={`notif-card__firm ${notif.isDone ? "notif-card__firm--done" : ""}`}>
-            {notif.firmName}
-          </span>
-          <span className={`notif-card__when notif-card__when--${notif.when}`}>
-            {notif.when === "today"    ? "Today"
-           : notif.when === "tomorrow" ? "Tomorrow"
-           : "Overdue"}
-          </span>
+        {/* Type icon */}
+        <div className={`notif-card__icon-wrap notif-card__icon-wrap--${cfg.color} ${notif.isDone ? "notif-card__icon-wrap--done" : ""}`}>
+          {cfg.icon}
         </div>
 
-        <div className="notif-card__meta">
-          <span>{notif.personName}</span>
-          <span className="notif-card__dot">·</span>
-          <span>{notif.mobileNo}</span>
-          {isAdmin && (
-            <>
-              <span className="notif-card__dot">·</span>
-              <span className="notif-card__sales">👤 {notif.salesPerson}</span>
-            </>
+        {/* Body */}
+        <div className="notif-card__body">
+          <div className="notif-card__top">
+            <span className={`notif-card__firm ${notif.isDone ? "notif-card__firm--done" : ""}`}>
+              {notif.firmName}
+            </span>
+            <span className={`notif-card__when notif-card__when--${notif.when}`}>
+              {notif.when === "today"    ? "Today"
+             : notif.when === "tomorrow" ? "Tomorrow"
+             : "Overdue"}
+            </span>
+          </div>
+
+          <div className="notif-card__meta">
+            <span>{notif.personName}</span>
+            <span className="notif-card__dot">·</span>
+            <span>{notif.mobileNo}</span>
+            {isAdmin && (
+              <>
+                <span className="notif-card__dot">·</span>
+                <span className="notif-card__sales">👤 {notif.salesPerson}</span>
+              </>
+            )}
+          </div>
+
+          <div className="notif-card__type-row">
+            <span className={`notif-card__badge notif-card__badge--${cfg.color}`}>
+              {cfg.icon} {cfg.label}
+            </span>
+            <span className="notif-card__date">{formatDate(notif.date)}</span>
+          </div>
+
+          {notif.isDone && (
+            <div className="notif-card__done-label">✓ Done</div>
           )}
         </div>
-
-        <div className="notif-card__type-row">
-          <span className={`notif-card__badge notif-card__badge--${cfg.color}`}>
-            {cfg.icon} {cfg.label}
-          </span>
-          <span className="notif-card__date">{formatDate(notif.date)}</span>
-        </div>
-
-        {/* Done overlay label */}
-        {notif.isDone && (
-          <div className="notif-card__done-label">✓ Done</div>
-        )}
       </div>
+
+      {/* ── Message box (shown after tick on undone reminder) ─────────────── */}
+      {showMsgBox && !notif.isDone && (
+        <div className="notif-card__msg-box" onClick={(e) => e.stopPropagation()}>
+          <div className="notif-card__msg-box-label">
+            {cfg.icon}
+            <span>Add a note for this {cfg.label.toLowerCase()} *</span>
+          </div>
+          <textarea
+            className={`notif-card__msg-textarea ${msgError ? "notif-card__msg-textarea--error" : ""}`}
+            placeholder={`What happened during this ${cfg.label.toLowerCase()}? (required)`}
+            value={message}
+            onChange={(e) => { setMessage(e.target.value); setMsgError(""); }}
+            rows={3}
+            autoFocus
+          />
+          {msgError && (
+            <div className="notif-card__msg-error">{msgError}</div>
+          )}
+          <div className="notif-card__msg-actions">
+            <button
+              className="btn btn--ghost btn--sm"
+              onClick={handleCancel}
+              disabled={isAddingNote}>
+              Cancel
+            </button>
+            <button
+              className="btn btn--primary btn--sm"
+              onClick={handleSubmit}
+              disabled={isAddingNote || isToggling}>
+              {isAddingNote ? "Saving..." : "Submit & Mark Done"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// ── Main Panel ───────────────────────────────────────────────
+// ── Main Panel ────────────────────────────────────────────────────────────
 const NotificationPanel = () => {
-  const { data, isLoading }          = useNotifications();
+  const { data, isLoading }                           = useNotifications();
   const { mutate: toggleDone, isPending: isToggling } = useToggleDone();
-  const { user }                     = useAuth();
-  const navigate                     = useNavigate();
-  const isAdmin                      = user?.role === "admin";
-  const [activeTab, setActiveTab]    = useState("today");
+  const { mutate: addNote,    isPending: isAddingNote } = useAddLeadNote();
+  const { user }                                      = useAuth();
+  const navigate                                      = useNavigate();
+  const isAdmin                                       = user?.role === "admin";
+  const [activeTab, setActiveTab]                     = useState("today");
 
   const notifications = data?.notifications || [];
   const todayList    = notifications.filter((n) => n.when === "today");
   const tomorrowList = notifications.filter((n) => n.when === "tomorrow");
   const overdueList  = notifications.filter((n) => n.when === "overdue");
 
-  const tabMap = { today: todayList, tomorrow: tomorrowList, overdue: overdueList };
+  const tabMap   = { today: todayList, tomorrow: tomorrowList, overdue: overdueList };
   const shownList = tabMap[activeTab] || [];
 
   const handleNavigate = (notif) => {
@@ -142,7 +235,6 @@ const NotificationPanel = () => {
   if (isLoading) return null;
   if (notifications.length === 0) return null;
 
-  // undone counts for tab dots
   const undoneToday    = todayList.filter((n) => !n.isDone).length;
   const undoneTomorrow = tomorrowList.filter((n) => !n.isDone).length;
   const undoneOverdue  = overdueList.filter((n) => !n.isDone).length;
@@ -175,13 +267,11 @@ const NotificationPanel = () => {
           ].map(({ key, label, count, dotClass }) => (
             <button
               key={key}
-              className={`notif-panel__tab ${activeTab === key ? "notif-panel__tab--active notif-panel__tab--active-${key}" : ""}`}
+              className={`notif-panel__tab ${activeTab === key ? `notif-panel__tab--active notif-panel__tab--active-${key}` : ""}`}
               onClick={() => setActiveTab(key)}
             >
               {label}
-              {count > 0 && (
-                <span className={`notif-panel__tab-dot ${dotClass}`} />
-              )}
+              {count > 0 && <span className={`notif-panel__tab-dot ${dotClass}`} />}
             </button>
           ))}
         </div>
@@ -204,6 +294,8 @@ const NotificationPanel = () => {
               onNavigate={handleNavigate}
               onToggle={toggleDone}
               isToggling={isToggling}
+              onAddNote={addNote}
+              isAddingNote={isAddingNote}
             />
           ))
         )}
