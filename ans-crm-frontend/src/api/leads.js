@@ -26,10 +26,22 @@ export const deleteLead = async (id) => {
   return response.data;
 };
 
-// ── NEW: Add a reminder note to a lead ───────────────────────────────────
-// field: "callingDate" | "followUpDate" | "visitDate"
-// message: string (required)
 export const addLeadNote = async (id, data) => {
   const response = await api.post(`/leads/${id}/notes`, data);
+  return response.data;
+};
+
+// ── NEW: Check if a mobile number already exists in any lead ──────────────
+// excludeLeadId: pass current lead._id in edit forms so own lead is skipped
+export const checkDuplicateMobile = async (mobile, excludeLeadId = "") => {
+  const params = new URLSearchParams({ mobile });
+  if (excludeLeadId) params.append("excludeLeadId", excludeLeadId);
+  const response = await api.get(`/leads/check-duplicate?${params}`);
+  return response.data; // { found: bool, leads: [...] }
+};
+
+// ── NEW: Add current user as co-assignee of an existing lead ─────────────
+export const addCoAssigneeToLead = async (leadId) => {
+  const response = await api.patch(`/leads/${leadId}/co-assignee`);
   return response.data;
 };

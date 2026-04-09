@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { useUpdateLead, useLeads } from "../../hooks/useLeads";
+import useDuplicateCheck from "../../hooks/useDuplicateCheck";
+import DuplicateWarning from "../shared/DuplicateWarning";
 import useUIStore from "../../store/useUIStore";
 import useAddressBlocks from "../../hooks/useAddressBlocks";
 import AddressBlocks from "../shared/AddressBlocks";
 import { BANK_LIST } from "../../utils/bankList";
 import "./SalesLeadEditModal.css";
 import "../shared/AddressBlocks.css";
+import "../shared/DuplicateWarning.css";
 
 const emptyContact = () => ({ personName: "", designation: "", mobileNo: "", email: "" });
 
@@ -18,14 +21,13 @@ const SalesLeadEditModal = ({ lead, onClose }) => {
     new Set((allLeads || []).map((l) => l.groupName).filter(Boolean))
   ).sort();
 
-  const {
-    officeAddresses, factoryAddresses,
-    handleOfficeChange, handleFactoryChange,
-    addOffice, addFactory, removeOffice, removeFactory,
-    resetAddresses,
-  } = useAddressBlocks();
+  const { officeAddresses, factoryAddresses, handleOfficeChange, handleFactoryChange, addOffice, addFactory, removeOffice, removeFactory, resetAddresses } = useAddressBlocks();
 
-  const [form, setForm] = useState({});
+  // Pass lead._id so own mobile doesn't trigger duplicate warning
+  const { checkMobile, getDuplicates, addCoAssignee } = useDuplicateCheck(lead?._id || "");
+
+  const [form, setForm]   = useState({});
+  const [dismissed, setDismissed] = useState({});
   const [groupSuggestions, setGroupSuggestions] = useState([]);
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
 
@@ -57,8 +59,8 @@ const SalesLeadEditModal = ({ lead, onClose }) => {
         projectStatus: lead.projectStatus || "",
         ansClientType: lead.ansClientType || "ans_client",
       });
-      // Reset address blocks with saved data
       resetAddresses(lead.officeAddresses, lead.factoryAddresses);
+      setDismissed({});
     }
   }, [lead]);
 
@@ -67,16 +69,13 @@ const SalesLeadEditModal = ({ lead, onClose }) => {
     setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
-  const handleContactChange = (index, field, value) =>
-    setForm((prev) => {
-      const updated = [...prev.additionalContacts];
-      updated[index] = { ...updated[index], [field]: value };
-      return { ...prev, additionalContacts: updated };
-    });
-  const addContact = () =>
-    setForm((prev) => ({ ...prev, additionalContacts: [...prev.additionalContacts, emptyContact()] }));
-  const removeContact = (index) =>
-    setForm((prev) => ({ ...prev, additionalContacts: prev.additionalContacts.filter((_, i) => i !== index) }));
+  const handleContactChange = (index, field, value) => setForm((prev) => {
+    const updated = [...prev.additionalContacts];
+    updated[index] = { ...updated[index], [field]: value };
+    return { ...prev, additionalContacts: updated };
+  });
+  const addContact    = () => setForm((prev) => ({ ...prev, additionalContacts: [...prev.additionalContacts, emptyContact()] }));
+  const removeContact = (i) => setForm((prev) => ({ ...prev, additionalContacts: prev.additionalContacts.filter((_, j) => j !== i) }));
 
   const handleGroupChange = (e) => {
     const val = e.target.value;
@@ -86,13 +85,26 @@ const SalesLeadEditModal = ({ lead, onClose }) => {
     setShowGroupDropdown(val.trim().length > 0 && matches.length > 0);
   };
 
+  const handleEditExisting = async (dupLead) => {
+    try {
+      await addCoAssignee(dupLead._id);
+      showToast("You've been added as co-assignee of that lead.");
+      onClose();
+    } catch { showToast("Failed to add co-assignee", "error"); }
+  };
+
+  const getDupInfo = (mobile) => {
+    if (!mobile || dismissed[mobile]) return { isChecking: false, leads: [] };
+    return getDuplicates(mobile);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     updateLead(
       { id: lead._id, data: { ...form, officeAddresses, factoryAddresses } },
       {
         onSuccess: () => { showToast("Visit updated successfully"); onClose(); },
-        onError: () => showToast("Failed to update visit", "error"),
+        onError:   () => showToast("Failed to update visit", "error"),
       }
     );
   };
@@ -128,31 +140,35 @@ const SalesLeadEditModal = ({ lead, onClose }) => {
             <div className="form-group" style={{ position: "relative" }}>
               <label className="form-label">Business Group <span className="form-label-hint">(optional)</span></label>
               <input className="form-input" name="groupName" value={form.groupName || ""}
-                onChange={handleGroupChange}
-                onBlur={() => setTimeout(() => setShowGroupDropdown(false), 150)}
+                onChange={handleGroupChange} onBlur={() => setTimeout(() => setShowGroupDropdown(false), 150)}
                 placeholder="e.g. Sharma Group" autoComplete="off" />
               {showGroupDropdown && (
                 <div className="group-autocomplete">
                   {groupSuggestions.map((g) => (
                     <button key={g} type="button" className="group-autocomplete__item"
-                      onMouseDown={() => { setForm(p => ({ ...p, groupName: g })); setShowGroupDropdown(false); }}>
-                      🔗 {g}
-                    </button>
+                      onMouseDown={() => { setForm(p => ({ ...p, groupName: g })); setShowGroupDropdown(false); }}>🔗 {g}</button>
                   ))}
                 </div>
               )}
             </div>
           </div>
           <div className="sales-edit-modal__grid">
-            <div className="form-group">
-              <label className="form-label">Person Name <span className="contact-badge">Primary</span></label>
+            <div className="form-group"><label className="form-label">Person Name <span className="contact-badge">Primary</span></label>
               <input className="form-input" name="personName" value={form.personName} onChange={handleChange} required /></div>
             <div className="form-group"><label className="form-label">Designation</label>
               <input className="form-input" name="designation" value={form.designation} onChange={handleChange} /></div>
           </div>
           <div className="sales-edit-modal__grid sales-edit-modal__grid--3">
-            <div className="form-group"><label className="form-label">Mobile</label>
-              <input className="form-input" name="mobileNo" value={form.mobileNo} onChange={handleChange} required /></div>
+            <div className="form-group">
+              <label className="form-label">Mobile</label>
+              <input className="form-input" name="mobileNo" value={form.mobileNo}
+                onChange={handleChange} onBlur={(e) => checkMobile(e.target.value)} required />
+              {(() => { const { isChecking, leads } = getDupInfo(form.mobileNo);
+                return (isChecking || leads.length > 0) ? (
+                  <DuplicateWarning mobile={form.mobileNo} leads={leads} isChecking={isChecking}
+                    onCreateNew={() => setDismissed(p => ({ ...p, [form.mobileNo]: true }))}
+                    onEditExisting={handleEditExisting} />) : null; })()}
+            </div>
             <div className="form-group"><label className="form-label">Email</label>
               <input className="form-input" name="email" value={form.email} onChange={handleChange} /></div>
           </div>
@@ -171,8 +187,17 @@ const SalesLeadEditModal = ({ lead, onClose }) => {
                   <input className="form-input" value={contact.designation} onChange={(e) => handleContactChange(idx, "designation", e.target.value)} /></div>
               </div>
               <div className="sales-edit-modal__grid">
-                <div className="form-group"><label className="form-label">Mobile</label>
-                  <input className="form-input" value={contact.mobileNo} onChange={(e) => handleContactChange(idx, "mobileNo", e.target.value)} /></div>
+                <div className="form-group">
+                  <label className="form-label">Mobile</label>
+                  <input className="form-input" value={contact.mobileNo}
+                    onChange={(e) => handleContactChange(idx, "mobileNo", e.target.value)}
+                    onBlur={(e) => checkMobile(e.target.value)} />
+                  {(() => { const { isChecking, leads } = getDupInfo(contact.mobileNo);
+                    return (isChecking || leads.length > 0) ? (
+                      <DuplicateWarning mobile={contact.mobileNo} leads={leads} isChecking={isChecking}
+                        onCreateNew={() => setDismissed(p => ({ ...p, [contact.mobileNo]: true }))}
+                        onEditExisting={handleEditExisting} />) : null; })()}
+                </div>
                 <div className="form-group"><label className="form-label">Email</label>
                   <input className="form-input" value={contact.email} onChange={(e) => handleContactChange(idx, "email", e.target.value)} /></div>
               </div>
@@ -182,15 +207,12 @@ const SalesLeadEditModal = ({ lead, onClose }) => {
             <button type="button" className="btn btn--ghost btn--sm" onClick={addContact}>+ Add Another Contact Person</button>
           </div>
 
-          {/* ADDRESS BLOCKS */}
+          {/* ADDRESS */}
           <div className="sales-edit-modal__section">📍 Address Details</div>
-          <AddressBlocks
-            officeAddresses={officeAddresses} factoryAddresses={factoryAddresses}
+          <AddressBlocks officeAddresses={officeAddresses} factoryAddresses={factoryAddresses}
             onOfficeChange={handleOfficeChange} onFactoryChange={handleFactoryChange}
             onAddOffice={addOffice} onAddFactory={addFactory}
-            onRemoveOffice={removeOffice} onRemoveFactory={removeFactory}
-            gridClass="sales-edit-modal__grid"
-          />
+            onRemoveOffice={removeOffice} onRemoveFactory={removeFactory} gridClass="sales-edit-modal__grid" />
 
           {/* BUSINESS */}
           <div className="sales-edit-modal__section">Business</div>
@@ -215,15 +237,11 @@ const SalesLeadEditModal = ({ lead, onClose }) => {
             <div className="form-group"><label className="form-label">Meeting Date</label>
               <input className="form-input" name="meetingDate" type="date" value={form.meetingDate} onChange={handleChange} /></div>
           </div>
-
           <div className="sanction-toggle-row">
             <label className="form-checkbox sanction-toggle-label">
-              <input type="checkbox" name="sanction" checked={form.sanction} onChange={handleChange} />
-              <span>✅ Sanctioned</span>
+              <input type="checkbox" name="sanction" checked={form.sanction} onChange={handleChange} /><span>✅ Sanctioned</span>
             </label>
-            <span className="sanction-toggle-hint">
-              {form.sanction ? "Banking details are now visible below." : "Enable to enter banking details."}
-            </span>
+            <span className="sanction-toggle-hint">{form.sanction ? "Banking details are now visible below." : "Enable to enter banking details."}</span>
           </div>
           {form.sanction && (
             <div className="banking-details-block">
@@ -261,9 +279,7 @@ const SalesLeadEditModal = ({ lead, onClose }) => {
 
           <div className="sales-edit-modal__footer">
             <button type="button" className="btn btn--ghost" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn--primary" disabled={isPending}>
-              {isPending ? "Saving..." : "Save Changes"}
-            </button>
+            <button type="submit" className="btn btn--primary" disabled={isPending}>{isPending ? "Saving..." : "Save Changes"}</button>
           </div>
         </form>
       </div>

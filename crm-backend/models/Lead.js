@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 
-// ── Contact sub-schema ────────────────────────────────────────────────────
 const contactSchema = new mongoose.Schema(
   {
     personName:  { type: String, trim: true },
@@ -11,7 +10,6 @@ const contactSchema = new mongoose.Schema(
   { _id: true }
 );
 
-// ── Address sub-schema ────────────────────────────────────────────────────
 const addressSchema = new mongoose.Schema(
   {
     label:      String,
@@ -25,28 +23,12 @@ const addressSchema = new mongoose.Schema(
   { _id: true }
 );
 
-// ── Note sub-schema (NEW) ─────────────────────────────────────────────────
-// One note per reminder field. Saved when user ticks a reminder + submits message.
 const noteSchema = new mongoose.Schema(
   {
-    field: {
-      type:     String,
-      enum:     ["callingDate", "followUpDate", "visitDate"],
-      required: true,
-    },
-    message: {
-      type:     String,
-      trim:     true,
-      required: true,
-    },
-    addedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref:  "User",
-    },
-    addedAt: {
-      type:    Date,
-      default: Date.now,
-    },
+    field:   { type: String, enum: ["callingDate", "followUpDate", "visitDate"], required: true },
+    message: { type: String, trim: true, required: true },
+    addedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    addedAt: { type: Date, default: Date.now },
   },
   { _id: true }
 );
@@ -55,11 +37,22 @@ const leadSchema = new mongoose.Schema(
   {
     srNo: { type: Number, unique: true },
 
+    // Primary assignee (who created / owns the lead)
     assignedTo: {
       type:     mongoose.Schema.Types.ObjectId,
       ref:      "User",
       required: true,
     },
+
+    // ── NEW: Co-assignees ─────────────────────────────────────────────────
+    // Added when another user clicks "Edit Existing Lead" on a duplicate warning.
+    // Both assignedTo + coAssignees can view/edit this lead.
+    coAssignees: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref:  "User",
+      },
+    ],
 
     visitDate:    Date,
     callingDate:  Date,
@@ -105,18 +98,19 @@ const leadSchema = new mongoose.Schema(
     projectStatus: String,
     ansClientType: { type: String, enum: ["ans_client", "other"] },
 
-    // ── Activity notes — one per reminder field ───────────────────────────
     notes: { type: [noteSchema], default: [] },
   },
   { timestamps: true }
 );
 
 leadSchema.index({ assignedTo: 1 });
+leadSchema.index({ coAssignees: 1 });   // fast lookup by co-assignee
 leadSchema.index({ firmName: 1 });
 leadSchema.index({ groupName: 1 });
 leadSchema.index({ district: 1 });
 leadSchema.index({ state: 1 });
 leadSchema.index({ city: 1 });
 leadSchema.index({ areaEstate: 1 });
+leadSchema.index({ mobileNo: 1 });      // fast duplicate check on primary mobile
 
 module.exports = mongoose.model("Lead", leadSchema);

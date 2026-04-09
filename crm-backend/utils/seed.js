@@ -3,12 +3,12 @@ const mongoose = require("mongoose");
 const User = require("../models/User");
 const Lead = require("../models/Lead");
 
-// ── Dates in March / April 2026 ───────────────────────────────────────────
+// ── Dates near April 9, 2026 ──────────────────────────────────────────────
 const mar = (d) => new Date(`2026-03-${String(d).padStart(2, "0")}`);
 const apr = (d) => new Date(`2026-04-${String(d).padStart(2, "0")}`);
-// Today = Apr 1, 2026
+// Today = Apr 9, 2026
 // followUpDate < today   → overdue reminder  [EC-12]
-// followUpDate = Apr 1   → due-today         [EC-13]
+// followUpDate = Apr 9   → due-today         [EC-13]
 // followUpDate > today   → upcoming          [EC-14]
 
 const seedData = async () => {
@@ -55,7 +55,7 @@ const seedData = async () => {
     // [EC-10] groupName set → group filter + linked view
     // [EC-11] groupName empty → standalone
     // [EC-12] followUpDate PAST → overdue reminder
-    // [EC-13] followUpDate Apr 1 (TODAY) → due-today reminder
+    // [EC-13] followUpDate Apr 9 (TODAY) → due-today reminder
     // [EC-14] followUpDate FUTURE → upcoming reminder
     // [EC-15] callingDate PAST → overdue calling
     // [EC-16] visitDate FUTURE → upcoming scheduled visit
@@ -78,6 +78,8 @@ const seedData = async () => {
     // [EC-33] Full lead (every field filled)
     // [EC-34] Different state (Rajasthan + Maharashtra for filter test)
     // [EC-35] meetingScheduled + meetingDate set
+    // [EC-36] coAssignees set → shared lead visible to multiple sales users
+    // [EC-37] notes array populated → callingDate / followUpDate / visitDate notes
     // ═══════════════════════════════════════════════════════════════════════
 
     const sampleLeads = [
@@ -86,14 +88,14 @@ const seedData = async () => {
       // SWAYAM'S LEADS  (10 leads)
       // ─────────────────────────────────────────────────────────────────
 
-      // Lead 1 ── [EC-1][EC-3][EC-4][EC-5][EC-8][EC-10][EC-12][EC-17][EC-19][EC-21][EC-23][EC-25][EC-28][EC-33][EC-35]
+      // Lead 1 ── [EC-1][EC-3][EC-4][EC-5][EC-8][EC-10][EC-12][EC-17][EC-19][EC-21][EC-23][EC-25][EC-28][EC-33][EC-35][EC-37]
       // FULL LEAD: Patel Group, sanctioned Bank of Baroda, 2 offices + 2 factories,
-      //            3 extra contacts, overdue followUp (Mar 10), ₹1.5 Cr
+      //            3 extra contacts, overdue followUp (Mar 25), ₹1.5 Cr, with notes
       {
         assignedTo:   sales1._id,
-        visitDate:    mar(5),
-        callingDate:  mar(3),
-        followUpDate: mar(10),          // [EC-12] PAST → overdue
+        visitDate:    mar(20),
+        callingDate:  mar(22),
+        followUpDate: mar(25),          // [EC-12] PAST → overdue
 
         groupName: "Patel Group",       // [EC-10]
 
@@ -114,8 +116,8 @@ const seedData = async () => {
           { label: "Branch Office", areaEstate: "CG Road",      address: "301, Sakar Complex",       city: "Ahmedabad", district: "Ahmedabad", state: "Gujarat", pincode: "380009" },
         ],
         factoryAddresses: [             // [EC-4] 2 factories
-          { label: "Unit 1", areaEstate: "Vatva GIDC",  address: "Survey No. 78, Vatva",        city: "Ahmedabad", district: "Ahmedabad", state: "Gujarat", pincode: "382440" },
-          { label: "Unit 2", areaEstate: "Sanand GIDC", address: "Plot F-22, Sanand GIDC",      city: "Ahmedabad", district: "Ahmedabad", state: "Gujarat", pincode: "382110" },
+          { label: "Unit 1", areaEstate: "Vatva GIDC",  address: "Survey No. 78, Vatva",   city: "Ahmedabad", district: "Ahmedabad", state: "Gujarat", pincode: "382440" },
+          { label: "Unit 2", areaEstate: "Sanand GIDC", address: "Plot F-22, Sanand GIDC", city: "Ahmedabad", district: "Ahmedabad", state: "Gujarat", pincode: "382110" },
         ],
 
         areaEstate: "GIDC Phase 2", city: "Ahmedabad", district: "Ahmedabad", state: "Gujarat", pincode: "382445",
@@ -127,24 +129,32 @@ const seedData = async () => {
 
         sanction: true,                 // [EC-1]
         bankName: "Bank of Baroda",     // [EC-25] bank 1
-        sanctionDate: mar(20),
+        sanctionDate: apr(1),
         amount: 15000000,               // [EC-28] ₹1.5 Cr
 
         meetingScheduled: true,
-        meetingDate: mar(25),           // [EC-35]
+        meetingDate: apr(12),           // [EC-35]
 
         projectType:   "loan",          // [EC-19]
         projectStatus: "Sanctioned",
         ansClientType: "ans_client",    // [EC-21]
+
+        notes: [                        // [EC-37]
+          { field: "followUpDate", message: "Client asked to reschedule — was travelling.",        addedBy: sales1._id, addedAt: mar(26) },
+          { field: "callingDate",  message: "Called twice, no answer. Try again after Apr 5.",     addedBy: sales1._id, addedAt: mar(23) },
+          { field: "visitDate",    message: "Site visit confirmed for Unit 2 in Sanand.",          addedBy: sales1._id, addedAt: mar(20) },
+        ],
       },
 
-      // Lead 2 ── [EC-2][EC-5][EC-9][EC-10][EC-13][EC-19][EC-21][EC-24][EC-30]
-      // Patel Group, NOT sanctioned, followUp TODAY (Apr 1), meeting visit
+      // Lead 2 ── [EC-2][EC-5][EC-9][EC-10][EC-13][EC-19][EC-21][EC-24][EC-30][EC-36]
+      // Patel Group, NOT sanctioned, followUp TODAY (Apr 9), meeting visit,
+      // coAssignee: sales2 (shared lead)
       {
         assignedTo:   sales1._id,
-        visitDate:    mar(12),
-        callingDate:  mar(15),
-        followUpDate: apr(1),           // [EC-13] TODAY
+        coAssignees:  [sales2._id],     // [EC-36] shared with Shubham
+        visitDate:    apr(2),
+        callingDate:  apr(4),
+        followUpDate: apr(9),           // [EC-13] TODAY
 
         groupName: "Patel Group",
 
@@ -174,14 +184,18 @@ const seedData = async () => {
         projectType:   "loan",
         projectStatus: "Under Review",
         ansClientType: "ans_client",
+
+        notes: [
+          { field: "followUpDate", message: "Discuss updated polymer pricing today.", addedBy: sales1._id, addedAt: apr(8) },
+        ],
       },
 
       // Lead 3 ── [EC-2][EC-5][EC-10][EC-14][EC-20][EC-22][EC-30]
-      // Patel Group 3rd company, subsidy, NOT sanctioned, followUp FUTURE (Apr 15)
+      // Patel Group 3rd company, subsidy, NOT sanctioned, followUp FUTURE (Apr 22)
       {
         assignedTo:   sales1._id,
-        visitDate:    mar(18),
-        followUpDate: apr(15),          // [EC-14] FUTURE
+        visitDate:    apr(3),
+        followUpDate: apr(22),          // [EC-14] FUTURE
 
         groupName: "Patel Group",
 
@@ -214,13 +228,13 @@ const seedData = async () => {
         ansClientType: "other",         // [EC-22]
       },
 
-      // Lead 4 ── [EC-1][EC-5][EC-8][EC-11][EC-15][EC-16][EC-19][EC-21][EC-25][EC-28]
+      // Lead 4 ── [EC-1][EC-5][EC-8][EC-11][EC-15][EC-16][EC-19][EC-21][EC-25][EC-28][EC-37]
       // Standalone, sanctioned HDFC Bank, callingDate PAST + visitDate FUTURE, 2 extra contacts
       {
         assignedTo:   sales1._id,
-        visitDate:    apr(10),          // [EC-16] FUTURE scheduled visit
-        callingDate:  mar(20),          // [EC-15] PAST overdue calling
-        followUpDate: apr(20),
+        visitDate:    apr(15),          // [EC-16] FUTURE scheduled visit
+        callingDate:  mar(28),          // [EC-15] PAST overdue calling
+        followUpDate: apr(25),
 
         groupName: "",                  // [EC-11]
 
@@ -249,15 +263,20 @@ const seedData = async () => {
 
         sanction: true,                 // [EC-1]
         bankName: "HDFC Bank",          // [EC-25] bank 2
-        sanctionDate: mar(28),
+        sanctionDate: apr(5),
         amount: 8000000,                // [EC-28]
 
         meetingScheduled: true,
-        meetingDate: apr(10),           // [EC-35]
+        meetingDate: apr(15),           // [EC-35]
 
         projectType:   "loan",
         projectStatus: "Sanctioned",
         ansClientType: "ans_client",
+
+        notes: [
+          { field: "callingDate",  message: "No response on Mar 28. Left voicemail.", addedBy: sales1._id, addedAt: mar(28) },
+          { field: "visitDate",    message: "Plant visit rescheduled to Apr 15.",     addedBy: sales1._id, addedAt: apr(7)  },
+        ],
       },
 
       // Lead 5 ── [EC-2][EC-6][EC-9][EC-11][EC-18][EC-20][EC-22][EC-30]
@@ -292,9 +311,9 @@ const seedData = async () => {
       // 2 offices, no factory, sanctioned UCO Bank, small amount ₹5L, overdue
       {
         assignedTo:   sales1._id,
-        visitDate:    mar(8),
-        callingDate:  mar(10),
-        followUpDate: mar(22),          // [EC-12] PAST overdue
+        visitDate:    mar(25),
+        callingDate:  mar(27),
+        followUpDate: apr(1),           // [EC-12] PAST overdue (Apr 1 < Apr 9)
 
         groupName: "",
 
@@ -306,8 +325,8 @@ const seedData = async () => {
         additionalContacts: [],
 
         officeAddresses: [              // [EC-3] 2 offices, no factory
-          { label: "Main Office",   areaEstate: "Anand APMC",         address: "Shop 5, APMC Yard",        city: "Anand", district: "Anand", state: "Gujarat", pincode: "388001" },
-          { label: "Branch Office", areaEstate: "Vallabh Vidyanagar", address: "Near Railway Station",     city: "Anand", district: "Anand", state: "Gujarat", pincode: "388120" },
+          { label: "Main Office",   areaEstate: "Anand APMC",         address: "Shop 5, APMC Yard",    city: "Anand", district: "Anand", state: "Gujarat", pincode: "388001" },
+          { label: "Branch Office", areaEstate: "Vallabh Vidyanagar", address: "Near Railway Station", city: "Anand", district: "Anand", state: "Gujarat", pincode: "388120" },
         ],
         factoryAddresses: [],
 
@@ -318,7 +337,7 @@ const seedData = async () => {
 
         sanction: true,
         bankName: "UCO Bank",           // [EC-25] bank 3
-        sanctionDate: mar(25),
+        sanctionDate: apr(3),
         amount: 500000,                 // [EC-29] ₹5 Lakh
 
         projectType:   "loan",
@@ -330,8 +349,8 @@ const seedData = async () => {
       // FACTORY ONLY, no office address — tests factory-only edge case
       {
         assignedTo:   sales1._id,
-        visitDate:    mar(14),
-        followUpDate: apr(5),
+        visitDate:    apr(1),
+        followUpDate: apr(18),
 
         groupName: "",
 
@@ -358,13 +377,13 @@ const seedData = async () => {
         ansClientType: "ans_client",
       },
 
-      // Lead 8 ── [EC-2][EC-5][EC-9][EC-11][EC-17][EC-20][EC-22][EC-30]
-      // All 3 dates set, subsidy, other client, Gandhinagar
+      // Lead 8 ── [EC-2][EC-5][EC-9][EC-11][EC-17][EC-20][EC-22][EC-30][EC-37]
+      // All 3 dates set, subsidy, other client, Gandhinagar, with notes
       {
         assignedTo:   sales1._id,
-        visitDate:    mar(20),          // [EC-17] all 3 dates
-        callingDate:  mar(22),
-        followUpDate: apr(3),
+        visitDate:    apr(5),           // [EC-17] all 3 dates
+        callingDate:  apr(7),
+        followUpDate: apr(16),
 
         groupName: "",
 
@@ -391,6 +410,11 @@ const seedData = async () => {
         projectType:   "subsidy",
         projectStatus: "Applied",
         ansClientType: "other",
+
+        notes: [
+          { field: "visitDate",    message: "Owner confirmed Apr 5 visit at 11am.",    addedBy: sales1._id, addedAt: apr(4) },
+          { field: "callingDate",  message: "Follow up call after subsidy doc review.", addedBy: sales1._id, addedAt: apr(6) },
+        ],
       },
 
       // Lead 9 ── [EC-32] TRULY MINIMAL — required fields only, nothing else
@@ -406,13 +430,15 @@ const seedData = async () => {
         sanction: false,
       },
 
-      // Lead 10 ── [EC-1][EC-5][EC-10][EC-13][EC-19][EC-21][EC-25][EC-26][EC-28][EC-35]
+      // Lead 10 ── [EC-1][EC-5][EC-10][EC-13][EC-19][EC-21][EC-25][EC-26][EC-28][EC-35][EC-36]
       // Patel Group 4th company, sanctioned ICICI Bank, followUp TODAY, ₹1.2 Cr
+      // coAssignee: sales3 (shared)
       {
         assignedTo:   sales1._id,
-        visitDate:    mar(28),
-        callingDate:  mar(30),
-        followUpDate: apr(1),           // [EC-13] TODAY
+        coAssignees:  [sales3._id],     // [EC-36] shared with Aagam
+        visitDate:    apr(6),
+        callingDate:  apr(8),
+        followUpDate: apr(9),           // [EC-13] TODAY
 
         groupName: "Patel Group",       // [EC-26] 4th in group
 
@@ -440,28 +466,32 @@ const seedData = async () => {
 
         sanction: true,
         bankName: "ICICI Bank",         // [EC-25] bank 4
-        sanctionDate: mar(31),
+        sanctionDate: apr(7),
         amount: 12000000,               // [EC-28]
 
         meetingScheduled: true,
-        meetingDate: apr(5),            // [EC-35]
+        meetingDate: apr(14),           // [EC-35]
 
         projectType:   "loan",
         projectStatus: "Sanctioned",
         ansClientType: "ans_client",
+
+        notes: [
+          { field: "followUpDate", message: "Confirm export license status before meeting.", addedBy: sales1._id, addedAt: apr(8) },
+        ],
       },
 
       // ─────────────────────────────────────────────────────────────────
       // SHUBHAM'S LEADS  (9 leads)
       // ─────────────────────────────────────────────────────────────────
 
-      // Lead 11 ── [EC-1][EC-5][EC-8][EC-10][EC-12][EC-19][EC-21][EC-25][EC-27]
+      // Lead 11 ── [EC-1][EC-5][EC-8][EC-10][EC-12][EC-19][EC-21][EC-25][EC-27][EC-37]
       // Shah Packaging Group, sanctioned PNB, overdue followUp, 2 extra contacts
       {
         assignedTo:   sales2._id,
-        visitDate:    mar(3),
-        callingDate:  mar(5),
-        followUpDate: mar(15),          // [EC-12] PAST overdue
+        visitDate:    mar(24),
+        callingDate:  mar(26),
+        followUpDate: apr(2),           // [EC-12] PAST overdue (Apr 2 < Apr 9)
 
         groupName: "Shah Packaging Group",   // [EC-27]
 
@@ -487,25 +517,30 @@ const seedData = async () => {
 
         industry: "Diamond Processing", segment: "Gems & Jewelry",
         constitution: "Partnership", machine: "Laser Cutting Machine",
-        remark: "Needs working capital urgently. Call before Apr 5.",
+        remark: "Needs working capital urgently. Call before Apr 12.",
         visitType: "office",
 
         sanction: true,
         bankName: "Punjab National Bank",   // [EC-25] bank 5
-        sanctionDate: mar(18),
+        sanctionDate: apr(4),
         amount: 4500000,
 
         projectType:   "loan",
         projectStatus: "Sanctioned",
         ansClientType: "ans_client",
+
+        notes: [
+          { field: "followUpDate", message: "Missed follow-up — client was at trade fair.",    addedBy: sales2._id, addedAt: apr(3) },
+          { field: "callingDate",  message: "Connected briefly, call back scheduled for Apr 9.", addedBy: sales2._id, addedAt: mar(27) },
+        ],
       },
 
       // Lead 12 ── [EC-2][EC-5][EC-9][EC-10][EC-13][EC-20][EC-22][EC-27][EC-30]
       // Shah Packaging Group 2nd, subsidy, NOT sanctioned, followUp TODAY
       {
         assignedTo:   sales2._id,
-        visitDate:    mar(10),
-        followUpDate: apr(1),           // [EC-13] TODAY
+        visitDate:    apr(3),
+        followUpDate: apr(9),           // [EC-13] TODAY
 
         groupName: "Shah Packaging Group",
 
@@ -535,13 +570,13 @@ const seedData = async () => {
         ansClientType: "other",
       },
 
-      // Lead 13 ── [EC-1][EC-4][EC-5][EC-8][EC-10][EC-14][EC-19][EC-21][EC-25][EC-27][EC-28]
+      // Lead 13 ── [EC-1][EC-4][EC-5][EC-8][EC-10][EC-14][EC-19][EC-21][EC-25][EC-27][EC-28][EC-35]
       // Shah Packaging Group 3rd, sanctioned Canara Bank, 2 factories, ₹1 Cr+, future followUp
       {
         assignedTo:   sales2._id,
-        visitDate:    mar(15),
-        callingDate:  mar(18),
-        followUpDate: apr(10),          // [EC-14] FUTURE
+        visitDate:    apr(4),
+        callingDate:  apr(6),
+        followUpDate: apr(20),          // [EC-14] FUTURE
 
         groupName: "Shah Packaging Group",
 
@@ -559,8 +594,8 @@ const seedData = async () => {
           { label: "Regd. Office", areaEstate: "Morbi Road", address: "2nd Floor, Shree Complex", city: "Morbi", district: "Morbi", state: "Gujarat", pincode: "363641" },
         ],
         factoryAddresses: [             // [EC-4] 2 factories
-          { label: "Unit 1", areaEstate: "Morbi GIDC Phase 2", address: "Plot 112",        city: "Morbi", district: "Morbi", state: "Gujarat", pincode: "363643" },
-          { label: "Unit 2", areaEstate: "Wankaner GIDC",      address: "Survey No. 45",   city: "Morbi", district: "Morbi", state: "Gujarat", pincode: "363621" },
+          { label: "Unit 1", areaEstate: "Morbi GIDC Phase 2", address: "Plot 112",      city: "Morbi", district: "Morbi", state: "Gujarat", pincode: "363643" },
+          { label: "Unit 2", areaEstate: "Wankaner GIDC",      address: "Survey No. 45", city: "Morbi", district: "Morbi", state: "Gujarat", pincode: "363621" },
         ],
 
         areaEstate: "Morbi Road", city: "Morbi", district: "Morbi", state: "Gujarat",
@@ -569,11 +604,11 @@ const seedData = async () => {
 
         sanction: true,
         bankName: "Canara Bank",        // [EC-25] bank 6
-        sanctionDate: mar(25),
+        sanctionDate: apr(8),
         amount: 10000000,               // [EC-28] ₹1 Cr
 
         meetingScheduled: true,
-        meetingDate: apr(8),            // [EC-35]
+        meetingDate: apr(17),           // [EC-35]
 
         projectType:   "loan",
         projectStatus: "Sanctioned",
@@ -610,9 +645,9 @@ const seedData = async () => {
       // Future visitDate, meeting type, NOT sanctioned, Bharuch
       {
         assignedTo:   sales2._id,
-        visitDate:    apr(8),           // [EC-16] FUTURE visit
-        callingDate:  apr(2),
-        followUpDate: apr(15),
+        visitDate:    apr(18),          // [EC-16] FUTURE visit
+        callingDate:  apr(10),
+        followUpDate: apr(23),
 
         groupName: "",
 
@@ -646,9 +681,9 @@ const seedData = async () => {
       // Sanctioned Axis Bank, overdue, Mehsana
       {
         assignedTo:   sales2._id,
-        visitDate:    mar(6),
-        callingDate:  mar(8),
-        followUpDate: mar(20),          // [EC-12] PAST overdue
+        visitDate:    mar(27),
+        callingDate:  mar(29),
+        followUpDate: apr(3),           // [EC-12] PAST overdue (Apr 3 < Apr 9)
 
         groupName: "",
 
@@ -672,7 +707,7 @@ const seedData = async () => {
 
         sanction: true,
         bankName: "Axis Bank",          // [EC-25] bank 7
-        sanctionDate: mar(22),
+        sanctionDate: apr(6),
         amount: 3000000,
 
         projectType:   "loan",
@@ -684,8 +719,8 @@ const seedData = async () => {
       // Future followUp, Rajkot, NOT sanctioned, other client
       {
         assignedTo:   sales2._id,
-        visitDate:    mar(25),
-        followUpDate: apr(20),          // [EC-14] FUTURE
+        visitDate:    apr(7),
+        followUpDate: apr(28),          // [EC-14] FUTURE
 
         groupName: "",
 
@@ -718,9 +753,9 @@ const seedData = async () => {
       // 2 offices, no factory, sanctioned Kotak, followUp TODAY, Ahmedabad
       {
         assignedTo:   sales2._id,
-        visitDate:    mar(20),
-        callingDate:  mar(28),
-        followUpDate: apr(1),           // [EC-13] TODAY
+        visitDate:    apr(5),
+        callingDate:  apr(7),
+        followUpDate: apr(9),           // [EC-13] TODAY
 
         groupName: "",
 
@@ -744,7 +779,7 @@ const seedData = async () => {
 
         sanction: true,
         bankName: "Kotak Mahindra Bank",   // [EC-25] bank 8
-        sanctionDate: mar(30),
+        sanctionDate: apr(8),
         amount: 2500000,
 
         projectType:   "loan",
@@ -756,8 +791,8 @@ const seedData = async () => {
       // DIFFERENT STATE — Rajasthan (tests state filter)
       {
         assignedTo:   sales2._id,
-        visitDate:    mar(22),
-        followUpDate: apr(12),
+        visitDate:    apr(2),
+        followUpDate: apr(19),
 
         groupName: "",
 
@@ -790,13 +825,13 @@ const seedData = async () => {
       // AAGAM'S LEADS  (8 leads)
       // ─────────────────────────────────────────────────────────────────
 
-      // Lead 20 ── [EC-1][EC-5][EC-8][EC-11][EC-12][EC-19][EC-21][EC-25]
-      // Sanctioned Indian Bank, overdue, Junagadh, 2 extra contacts
+      // Lead 20 ── [EC-1][EC-5][EC-8][EC-11][EC-12][EC-19][EC-21][EC-25][EC-37]
+      // Sanctioned Indian Bank, overdue, Junagadh, 2 extra contacts, with notes
       {
         assignedTo:   sales3._id,
-        visitDate:    mar(4),
-        callingDate:  mar(6),
-        followUpDate: mar(18),          // [EC-12] PAST overdue
+        visitDate:    mar(26),
+        callingDate:  mar(28),
+        followUpDate: apr(4),           // [EC-12] PAST overdue (Apr 4 < Apr 9)
 
         groupName: "",
 
@@ -825,20 +860,25 @@ const seedData = async () => {
 
         sanction: true,
         bankName: "Indian Bank",        // [EC-25] bank 9
-        sanctionDate: mar(25),
+        sanctionDate: apr(6),
         amount: 2500000,
 
         projectType:   "loan",
         projectStatus: "Sanctioned",
         ansClientType: "ans_client",
+
+        notes: [
+          { field: "followUpDate", message: "Overdue — owner was unwell. Reconnect Apr 9.",    addedBy: sales3._id, addedAt: apr(5) },
+          { field: "callingDate",  message: "Confirmed sanction docs ready for collection.",   addedBy: sales3._id, addedAt: mar(29) },
+        ],
       },
 
       // Lead 21 ── [EC-2][EC-6][EC-9][EC-11][EC-14][EC-20][EC-22][EC-30]
       // No addresses, subsidy, future followUp, Bharuch
       {
         assignedTo:   sales3._id,
-        visitDate:    mar(9),
-        followUpDate: apr(18),          // [EC-14] FUTURE
+        visitDate:    apr(1),
+        followUpDate: apr(26),          // [EC-14] FUTURE
 
         groupName: "",
 
@@ -865,9 +905,9 @@ const seedData = async () => {
       // followUp TODAY, Surendranagar, NOT sanctioned
       {
         assignedTo:   sales3._id,
-        visitDate:    mar(16),
-        callingDate:  mar(25),
-        followUpDate: apr(1),           // [EC-13] TODAY
+        visitDate:    apr(4),
+        callingDate:  apr(7),
+        followUpDate: apr(9),           // [EC-13] TODAY
 
         groupName: "",
 
@@ -895,13 +935,13 @@ const seedData = async () => {
         ansClientType: "ans_client",
       },
 
-      // Lead 23 ── [EC-1][EC-5][EC-9][EC-11][EC-14][EC-19][EC-21][EC-24][EC-25][EC-35]
-      // Sanctioned Union Bank, future followUp, meeting scheduled, Ahmedabad
+      // Lead 23 ── [EC-1][EC-5][EC-9][EC-11][EC-14][EC-19][EC-21][EC-24][EC-25][EC-35][EC-37]
+      // Sanctioned Union Bank, future followUp, meeting scheduled, Ahmedabad, with notes
       {
         assignedTo:   sales3._id,
-        visitDate:    mar(19),
-        callingDate:  mar(21),
-        followUpDate: apr(22),
+        visitDate:    apr(5),
+        callingDate:  apr(7),
+        followUpDate: apr(30),
 
         groupName: "",
 
@@ -926,24 +966,29 @@ const seedData = async () => {
 
         sanction: true,
         bankName: "Union Bank of India",   // [EC-25] bank 10
-        sanctionDate: mar(29),
+        sanctionDate: apr(8),
         amount: 3000000,
 
         meetingScheduled: true,
-        meetingDate: apr(7),            // [EC-35]
+        meetingDate: apr(16),           // [EC-35]
 
         projectType:   "loan",
         projectStatus: "Sanctioned",
         ansClientType: "ans_client",
+
+        notes: [
+          { field: "visitDate",    message: "Client requested morning slot — confirmed 10am.", addedBy: sales3._id, addedAt: apr(4) },
+          { field: "followUpDate", message: "Post-meeting follow-up to share sanction letter.", addedBy: sales3._id, addedAt: apr(5) },
+        ],
       },
 
       // Lead 24 ── [EC-2][EC-5][EC-9][EC-11][EC-12][EC-20][EC-22][EC-30]
       // Subsidy, other, overdue, Surat
       {
         assignedTo:   sales3._id,
-        visitDate:    mar(11),
-        callingDate:  mar(14),
-        followUpDate: mar(28),          // [EC-12] PAST overdue
+        visitDate:    mar(30),
+        callingDate:  apr(2),
+        followUpDate: apr(5),           // [EC-12] PAST overdue (Apr 5 < Apr 9)
 
         groupName: "",
 
@@ -972,12 +1017,12 @@ const seedData = async () => {
       },
 
       // Lead 25 ── [EC-1][EC-5][EC-9][EC-11][EC-16][EC-19][EC-21][EC-25]
-      // Sanctioned Central Bank, future visitDate (Apr 12)
+      // Sanctioned Central Bank, future visitDate (Apr 17)
       {
         assignedTo:   sales3._id,
-        visitDate:    apr(12),          // [EC-16] FUTURE visit
-        callingDate:  apr(2),
-        followUpDate: apr(25),
+        visitDate:    apr(17),          // [EC-16] FUTURE visit
+        callingDate:  apr(10),
+        followUpDate: apr(29),
 
         groupName: "",
 
@@ -1002,7 +1047,7 @@ const seedData = async () => {
 
         sanction: true,
         bankName: "Central Bank of India",   // [EC-25] bank 11 — all banks now covered
-        sanctionDate: mar(31),
+        sanctionDate: apr(8),
         amount: 6000000,
 
         projectType:   "loan",
@@ -1014,8 +1059,8 @@ const seedData = async () => {
       // DIFFERENT STATE — Maharashtra (tests multi-state filter)
       {
         assignedTo:   sales3._id,
-        visitDate:    mar(24),
-        followUpDate: apr(14),
+        visitDate:    apr(3),
+        followUpDate: apr(21),
 
         groupName: "",
 
@@ -1042,15 +1087,18 @@ const seedData = async () => {
         ansClientType: "other",
       },
 
-      // Lead 27 ── [EC-31][EC-33] ADMIN LEAD — every possible field filled, admin created
+      // Lead 27 ── [EC-31][EC-33][EC-36][EC-37]
+      // ADMIN LEAD — every possible field filled, admin created,
+      // coAssignees: sales1 + sales2, notes on all 3 date fields
       {
-        assignedTo: admin._id,          // [EC-31]
+        assignedTo:  admin._id,         // [EC-31]
+        coAssignees: [sales1._id, sales2._id],  // [EC-36] both sales co-assigned
 
-        visitDate:    mar(1),
-        callingDate:  mar(3),
-        followUpDate: apr(1),           // [EC-13] TODAY
+        visitDate:    apr(3),
+        callingDate:  apr(6),
+        followUpDate: apr(9),           // [EC-13] TODAY
 
-        groupName: "Patel Group",       // makes Patel Group have 5 companies total
+        groupName: "Patel Group",       // makes Patel Group 5 companies total
 
         firmName:    "Patel Infrastructure Ltd",
         personName:  "Arvind Patel",
@@ -1069,8 +1117,8 @@ const seedData = async () => {
           { label: "Branch Office", areaEstate: "Gandhinagar Hub", address: "Block A, GJ-Hub",      city: "Gandhinagar", district: "Gandhinagar", state: "Gujarat", pincode: "382028" },
         ],
         factoryAddresses: [             // [EC-4] 2 factories
-          { label: "Plant 1", areaEstate: "Changodar GIDC",  address: "Plot D-45, Changodar", city: "Ahmedabad", district: "Ahmedabad", state: "Gujarat", pincode: "382213" },
-          { label: "Plant 2", areaEstate: "Bavla Industrial", address: "Survey No. 89, Bavla", city: "Ahmedabad", district: "Ahmedabad", state: "Gujarat", pincode: "382220" },
+          { label: "Plant 1", areaEstate: "Changodar GIDC",   address: "Plot D-45, Changodar", city: "Ahmedabad", district: "Ahmedabad", state: "Gujarat", pincode: "382213" },
+          { label: "Plant 2", areaEstate: "Bavla Industrial", address: "Survey No. 89, Bavla",  city: "Ahmedabad", district: "Ahmedabad", state: "Gujarat", pincode: "382220" },
         ],
 
         areaEstate: "Prahladnagar", city: "Ahmedabad", district: "Ahmedabad", state: "Gujarat", pincode: "380015",
@@ -1082,15 +1130,21 @@ const seedData = async () => {
 
         sanction: true,
         bankName: "HDFC Bank",          // reuses HDFC — tests bank filter count accuracy
-        sanctionDate: mar(15),
+        sanctionDate: apr(7),
         amount: 50000000,               // [EC-28] ₹5 Cr — largest in dataset
 
         meetingScheduled: true,
-        meetingDate: apr(3),
+        meetingDate: apr(11),
 
         projectType:   "loan",
         projectStatus: "Sanctioned",
         ansClientType: "ans_client",
+
+        notes: [                        // [EC-37] notes on all 3 fields
+          { field: "followUpDate", message: "Admin follow-up — confirm final disbursement date with HDFC RM.", addedBy: admin._id,  addedAt: apr(8) },
+          { field: "callingDate",  message: "Conference call with legal + Arvind Patel completed.",            addedBy: admin._id,  addedAt: apr(6) },
+          { field: "visitDate",    message: "Plant 1 inspection done. Plant 2 scheduled for Apr 11.",          addedBy: sales1._id, addedAt: apr(4) },
+        ],
       },
     ];
 
@@ -1103,7 +1157,7 @@ const seedData = async () => {
     // ═══════════════════════════════════════════════════════════════════════
     // SUMMARY REPORT
     // ═══════════════════════════════════════════════════════════════════════
-    const today = new Date("2026-04-01");
+    const today = new Date("2026-04-09");
 
     const total         = sampleLeads.length;
     const sanctioned    = sampleLeads.filter(l => l.sanction).length;
@@ -1119,6 +1173,8 @@ const seedData = async () => {
     const overdue       = sampleLeads.filter(l => l.followUpDate && new Date(l.followUpDate) < today).length;
     const dueToday      = sampleLeads.filter(l => l.followUpDate && new Date(l.followUpDate).toDateString() === today.toDateString()).length;
     const upcoming      = sampleLeads.filter(l => l.followUpDate && new Date(l.followUpDate) > today).length;
+    const withCoAssign  = sampleLeads.filter(l => l.coAssignees?.length > 0).length;
+    const withNotes     = sampleLeads.filter(l => l.notes?.length > 0).length;
     const usedBanks     = [...new Set(sampleLeads.filter(l => l.bankName).map(l => l.bankName))];
     const usedStates    = [...new Set(sampleLeads.filter(l => l.state).map(l => l.state))];
 
@@ -1128,8 +1184,8 @@ const seedData = async () => {
     console.log("\nLOGIN CREDENTIALS:");
     console.log("  Admin   → aarchi.shah2005@gmail.com  / aarchi123");
     console.log("  Sales 1 → swayam.shah2010@gmail.com  / swayam123  (10 leads)");
-    console.log("  Sales 2 → shubham.shah2003@gmail.com / shubham123 (9 leads)");
-    console.log("  Sales 3 → aagam.shah2007@gmail.com   / aagam123   (8 leads)");
+    console.log("  Sales 2 → shubham.shah2003@gmail.com / shubham123  (9 leads)");
+    console.log("  Sales 3 → aagam.shah2007@gmail.com   / aagam123    (8 leads)");
     console.log("\n── LEADS ───────────────────────────────────────────");
     console.log(`  Total:              ${total}`);
     console.log(`  Sanctioned:         ${sanctioned}  (banking fields visible)`);
@@ -1147,7 +1203,13 @@ const seedData = async () => {
     console.log(`  With group:          ${withGroup}`);
     console.log("  Patel Group          → 5 companies (leads 1,2,3,10,27)");
     console.log("  Shah Packaging Group → 3 companies (leads 11,12,13)");
-    console.log("\n── REMINDERS (followUpDate vs Apr 1, 2026) ─────────");
+    console.log("\n── CO-ASSIGNEES & NOTES ─────────────────────────────");
+    console.log(`  With coAssignees:    ${withCoAssign}  [EC-36]`);
+    console.log("  Lead 2  → coAssignee: Shubham (sales2)");
+    console.log("  Lead 10 → coAssignee: Aagam   (sales3)");
+    console.log("  Lead 27 → coAssignees: Swayam + Shubham (admin lead)");
+    console.log(`  With notes:          ${withNotes}  [EC-37]`);
+    console.log("\n── REMINDERS (followUpDate vs Apr 9, 2026) ─────────");
     console.log(`  🔴 Overdue:          ${overdue}   [EC-12]`);
     console.log(`  🟡 Due Today:        ${dueToday}   [EC-13]`);
     console.log(`  🟢 Upcoming:         ${upcoming}  [EC-14]`);

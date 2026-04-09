@@ -1,7 +1,9 @@
 import Layout from "../../components/shared/Layout";
 import { useState } from "react";
 import { useCreateLead, useLeads } from "../../hooks/useLeads";
-import { useSalespersons, useAllUsers } from "../../hooks/useUsers";
+import { useAllUsers } from "../../hooks/useUsers";
+import useDuplicateCheck from "../../hooks/useDuplicateCheck";
+import DuplicateWarning from "../../components/shared/DuplicateWarning";
 import useUIStore from "../../store/useUIStore";
 import useAddressBlocks from "../../hooks/useAddressBlocks";
 import AddressBlocks from "../../components/shared/AddressBlocks";
@@ -9,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { BANK_LIST } from "../../utils/bankList";
 import "../../components/sales/LeadForm.css";
 import "../../components/shared/AddressBlocks.css";
+import "../../components/shared/DuplicateWarning.css";
 
 const emptyContact = () => ({ personName: "", designation: "", mobileNo: "", email: "" });
 
@@ -23,11 +26,9 @@ const AdminAddLead = () => {
     new Set((allLeads || []).map((l) => l.groupName).filter(Boolean))
   ).sort();
 
-  const {
-    officeAddresses, factoryAddresses,
-    handleOfficeChange, handleFactoryChange,
-    addOffice, addFactory, removeOffice, removeFactory,
-  } = useAddressBlocks();
+  const { officeAddresses, factoryAddresses, handleOfficeChange, handleFactoryChange, addOffice, addFactory, removeOffice, removeFactory } = useAddressBlocks();
+
+  const { checkMobile, getDuplicates, addCoAssignee } = useDuplicateCheck();
 
   const [form, setForm] = useState({
     assignedTo: "",
@@ -44,6 +45,7 @@ const AdminAddLead = () => {
   const [errors, setErrors] = useState({});
   const [groupSuggestions, setGroupSuggestions] = useState([]);
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
+  const [dismissed, setDismissed] = useState({});
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -51,16 +53,13 @@ const AdminAddLead = () => {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handleContactChange = (index, field, value) =>
-    setForm((prev) => {
-      const updated = [...prev.additionalContacts];
-      updated[index] = { ...updated[index], [field]: value };
-      return { ...prev, additionalContacts: updated };
-    });
-  const addContact = () =>
-    setForm((prev) => ({ ...prev, additionalContacts: [...prev.additionalContacts, emptyContact()] }));
-  const removeContact = (index) =>
-    setForm((prev) => ({ ...prev, additionalContacts: prev.additionalContacts.filter((_, i) => i !== index) }));
+  const handleContactChange = (index, field, value) => setForm((prev) => {
+    const updated = [...prev.additionalContacts];
+    updated[index] = { ...updated[index], [field]: value };
+    return { ...prev, additionalContacts: updated };
+  });
+  const addContact    = () => setForm((prev) => ({ ...prev, additionalContacts: [...prev.additionalContacts, emptyContact()] }));
+  const removeContact = (i) => setForm((prev) => ({ ...prev, additionalContacts: prev.additionalContacts.filter((_, j) => j !== i) }));
 
   const handleGroupChange = (e) => {
     const val = e.target.value;
@@ -70,12 +69,25 @@ const AdminAddLead = () => {
     setShowGroupDropdown(val.trim().length > 0 && matches.length > 0);
   };
 
+  const handleEditExisting = async (dupLead) => {
+    try {
+      await addCoAssignee(dupLead._id);
+      showToast("Co-assignee added. Redirecting to leads...");
+      navigate("/admin/leads");
+    } catch { showToast("Failed to add co-assignee", "error"); }
+  };
+
+  const getDupInfo = (mobile) => {
+    if (!mobile || dismissed[mobile]) return { isChecking: false, leads: [] };
+    return getDuplicates(mobile);
+  };
+
   const validate = () => {
     const e = {};
-    if (!form.assignedTo) e.assignedTo = "Please select a salesperson";
-    if (!form.firmName?.trim()) e.firmName = "Firm name required";
+    if (!form.assignedTo)        e.assignedTo = "Please select a salesperson";
+    if (!form.firmName?.trim())  e.firmName   = "Firm name required";
     if (!form.personName?.trim()) e.personName = "Person name required";
-    if (!form.mobileNo?.trim()) e.mobileNo = "Mobile number required";
+    if (!form.mobileNo?.trim())  e.mobileNo   = "Mobile number required";
     return e;
   };
 
@@ -85,7 +97,7 @@ const AdminAddLead = () => {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     createLead({ ...form, officeAddresses, factoryAddresses }, {
       onSuccess: () => { showToast("Lead added successfully"); navigate("/admin/leads"); },
-      onError: () => showToast("Failed to add lead", "error"),
+      onError:   () => showToast("Failed to add lead", "error"),
     });
   };
 
@@ -94,21 +106,17 @@ const AdminAddLead = () => {
   return (
     <Layout>
       <div className="page-header">
-        <div>
-          <h1 className="page-title">Add New Lead</h1>
-          <p className="page-subtitle">Admin: Assign to any salesperson</p>
-        </div>
+        <div><h1 className="page-title">Add New Lead</h1>
+          <p className="page-subtitle">Admin: Assign to any salesperson</p></div>
       </div>
 
       <form className="lead-form card" onSubmit={handleSubmit}>
 
-        {/* ── ASSIGN TO ─────────────────────────────────────────────── */}
+        {/* ASSIGN TO */}
         <div className="lead-form__section">
           <div className="lead-form__section-icon">👤</div>
-          <div>
-            <div className="lead-form__section-title">Assign To Salesperson</div>
-            <div className="lead-form__section-desc">Select who will handle this lead</div>
-          </div>
+          <div><div className="lead-form__section-title">Assign To Salesperson</div>
+            <div className="lead-form__section-desc">Select who will handle this lead</div></div>
         </div>
         <div className="form-group">
           <label className="form-label">Assign To *</label>
@@ -119,13 +127,11 @@ const AdminAddLead = () => {
           {errors.assignedTo && <span className="form-error">{errors.assignedTo}</span>}
         </div>
 
-        {/* ── CLIENT ────────────────────────────────────────────────── */}
+        {/* CLIENT */}
         <div className="lead-form__section">
           <div className="lead-form__section-icon">🏢</div>
-          <div>
-            <div className="lead-form__section-title">Client Information</div>
-            <div className="lead-form__section-desc">Firm and primary contact details</div>
-          </div>
+          <div><div className="lead-form__section-title">Client Information</div>
+            <div className="lead-form__section-desc">Firm and primary contact details</div></div>
         </div>
         <div className="lead-form__grid lead-form__grid--2">
           <div className="form-group">
@@ -135,17 +141,13 @@ const AdminAddLead = () => {
           </div>
           <div className="form-group" style={{ position: "relative" }}>
             <label className="form-label">Business Group <span className="form-label-hint">(optional)</span></label>
-            <input className="form-input" name="groupName" value={form.groupName}
-              onChange={handleGroupChange}
-              onBlur={() => setTimeout(() => setShowGroupDropdown(false), 150)}
-              placeholder="e.g. Sharma Group" autoComplete="off" />
+            <input className="form-input" name="groupName" value={form.groupName} onChange={handleGroupChange}
+              onBlur={() => setTimeout(() => setShowGroupDropdown(false), 150)} placeholder="e.g. Sharma Group" autoComplete="off" />
             {showGroupDropdown && (
               <div className="group-autocomplete">
                 {groupSuggestions.map((g) => (
                   <button key={g} type="button" className="group-autocomplete__item"
-                    onMouseDown={() => { setForm(p => ({ ...p, groupName: g })); setShowGroupDropdown(false); }}>
-                    🔗 {g}
-                  </button>
+                    onMouseDown={() => { setForm(p => ({ ...p, groupName: g })); setShowGroupDropdown(false); }}>🔗 {g}</button>
                 ))}
               </div>
             )}
@@ -161,9 +163,17 @@ const AdminAddLead = () => {
             <input className="form-input" name="designation" value={form.designation} onChange={handleChange} placeholder="Managing Director" /></div>
         </div>
         <div className="lead-form__grid lead-form__grid--2">
-          <div className="form-group"><label className="form-label">Mobile No. *</label>
-            <input className="form-input" name="mobileNo" value={form.mobileNo} onChange={handleChange} placeholder="+91 98765 43210" required />
-            {errors.mobileNo && <span className="form-error">{errors.mobileNo}</span>}</div>
+          <div className="form-group">
+            <label className="form-label">Mobile No. *</label>
+            <input className="form-input" name="mobileNo" value={form.mobileNo}
+              onChange={handleChange} onBlur={(e) => checkMobile(e.target.value)} placeholder="+91 98765 43210" required />
+            {errors.mobileNo && <span className="form-error">{errors.mobileNo}</span>}
+            {(() => { const { isChecking, leads } = getDupInfo(form.mobileNo);
+              return (isChecking || leads.length > 0) ? (
+                <DuplicateWarning mobile={form.mobileNo} leads={leads} isChecking={isChecking}
+                  onCreateNew={() => setDismissed(p => ({ ...p, [form.mobileNo]: true }))}
+                  onEditExisting={handleEditExisting} />) : null; })()}
+          </div>
           <div className="form-group"><label className="form-label">Email</label>
             <input className="form-input" name="email" type="email" value={form.email} onChange={handleChange} placeholder="contact@company.com" /></div>
         </div>
@@ -182,8 +192,17 @@ const AdminAddLead = () => {
                 <input className="form-input" value={contact.designation} onChange={(e) => handleContactChange(idx, "designation", e.target.value)} /></div>
             </div>
             <div className="lead-form__grid lead-form__grid--2">
-              <div className="form-group"><label className="form-label">Mobile No.</label>
-                <input className="form-input" value={contact.mobileNo} onChange={(e) => handleContactChange(idx, "mobileNo", e.target.value)} /></div>
+              <div className="form-group">
+                <label className="form-label">Mobile No.</label>
+                <input className="form-input" value={contact.mobileNo}
+                  onChange={(e) => handleContactChange(idx, "mobileNo", e.target.value)}
+                  onBlur={(e) => checkMobile(e.target.value)} />
+                {(() => { const { isChecking, leads } = getDupInfo(contact.mobileNo);
+                  return (isChecking || leads.length > 0) ? (
+                    <DuplicateWarning mobile={contact.mobileNo} leads={leads} isChecking={isChecking}
+                      onCreateNew={() => setDismissed(p => ({ ...p, [contact.mobileNo]: true }))}
+                      onEditExisting={handleEditExisting} />) : null; })()}
+              </div>
               <div className="form-group"><label className="form-label">Email</label>
                 <input className="form-input" value={contact.email} onChange={(e) => handleContactChange(idx, "email", e.target.value)} /></div>
             </div>
@@ -193,7 +212,7 @@ const AdminAddLead = () => {
           <button type="button" className="btn btn--ghost btn--sm" onClick={addContact}>+ Add Another Contact Person</button>
         </div>
 
-        {/* ── DATES ─────────────────────────────────────────────────── */}
+        {/* DATES */}
         <div className="lead-form__section">
           <div className="lead-form__section-icon">📅</div>
           <div><div className="lead-form__section-title">Visit & Follow-up Dates</div></div>
@@ -207,23 +226,18 @@ const AdminAddLead = () => {
             <input className="form-input" name="followUpDate" type="date" value={form.followUpDate} onChange={handleChange} /></div>
         </div>
 
-        {/* ── ADDRESS BLOCKS ────────────────────────────────────────── */}
+        {/* ADDRESS */}
         <div className="lead-form__section">
           <div className="lead-form__section-icon">📍</div>
-          <div>
-            <div className="lead-form__section-title">Address Details</div>
-            <div className="lead-form__section-desc">Office and factory locations</div>
-          </div>
+          <div><div className="lead-form__section-title">Address Details</div>
+            <div className="lead-form__section-desc">Office and factory locations</div></div>
         </div>
-        <AddressBlocks
-          officeAddresses={officeAddresses} factoryAddresses={factoryAddresses}
+        <AddressBlocks officeAddresses={officeAddresses} factoryAddresses={factoryAddresses}
           onOfficeChange={handleOfficeChange} onFactoryChange={handleFactoryChange}
           onAddOffice={addOffice} onAddFactory={addFactory}
-          onRemoveOffice={removeOffice} onRemoveFactory={removeFactory}
-          gridClass="lead-form__grid"
-        />
+          onRemoveOffice={removeOffice} onRemoveFactory={removeFactory} gridClass="lead-form__grid" />
 
-        {/* ── BUSINESS ──────────────────────────────────────────────── */}
+        {/* BUSINESS */}
         <div className="lead-form__section">
           <div className="lead-form__section-icon">💼</div>
           <div><div className="lead-form__section-title">Business Information</div></div>
@@ -241,7 +255,7 @@ const AdminAddLead = () => {
         <div className="form-group"><label className="form-label">Remark</label>
           <textarea className="form-textarea" name="remark" value={form.remark} onChange={handleChange} /></div>
 
-        {/* ── BANKING & VISIT ───────────────────────────────────────── */}
+        {/* BANKING */}
         <div className="lead-form__section">
           <div className="lead-form__section-icon">🏦</div>
           <div><div className="lead-form__section-title">Banking & Visit Details</div></div>
@@ -249,21 +263,16 @@ const AdminAddLead = () => {
         <div className="lead-form__grid lead-form__grid--2">
           <div className="form-group"><label className="form-label">Visit Type</label>
             <select className="form-select" name="visitType" value={form.visitType} onChange={handleChange}>
-              <option value="office">Office Visit</option>
-              <option value="meeting">Meeting</option>
+              <option value="office">Office Visit</option><option value="meeting">Meeting</option>
             </select></div>
           <div className="form-group"><label className="form-label">Meeting Date</label>
             <input className="form-input" name="meetingDate" type="date" value={form.meetingDate} onChange={handleChange} /></div>
         </div>
-
         <div className="sanction-toggle-row">
           <label className="form-checkbox sanction-toggle-label">
-            <input type="checkbox" name="sanction" checked={form.sanction} onChange={handleChange} />
-            <span>✅ Sanctioned</span>
+            <input type="checkbox" name="sanction" checked={form.sanction} onChange={handleChange} /><span>✅ Sanctioned</span>
           </label>
-          <span className="sanction-toggle-hint">
-            {form.sanction ? "Banking details are now visible below." : "Enable to enter banking details."}
-          </span>
+          <span className="sanction-toggle-hint">{form.sanction ? "Banking details are now visible below." : "Enable to enter banking details."}</span>
         </div>
         {form.sanction && (
           <div className="banking-details-block">
@@ -282,7 +291,7 @@ const AdminAddLead = () => {
           </div>
         )}
 
-        {/* ── PROJECT ───────────────────────────────────────────────── */}
+        {/* PROJECT */}
         <div className="lead-form__section">
           <div className="lead-form__section-icon">📋</div>
           <div><div className="lead-form__section-title">Project Details</div></div>
@@ -302,9 +311,7 @@ const AdminAddLead = () => {
 
         <div className="lead-form__footer">
           <button type="button" className="btn btn--ghost" onClick={() => navigate("/admin/leads")}>Cancel</button>
-          <button type="submit" className="btn btn--primary" disabled={isPending}>
-            {isPending ? "Adding..." : "Add Lead"}
-          </button>
+          <button type="submit" className="btn btn--primary" disabled={isPending}>{isPending ? "Adding..." : "Add Lead"}</button>
         </div>
       </form>
     </Layout>
